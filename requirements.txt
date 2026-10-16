@@ -1,0 +1,32 @@
+# Python dependencies for the IBM Z Datathon 2026 project.
+#
+# Versions are matched to the IBM LinuxONE Jupyter Lab ML container
+# (registry.linuxone.cloud.marist.edu/l1cc/jupyterlab-image-s390x), taken from
+# https://github.com/linuxone-community-cloud/jupyter-lab-ml/blob/main/packages.txt
+# Use Python 3.12 (matches the LinuxONE VM; numpy 2.0.2 has no wheels for 3.13+).
+#
+# Only list libraries the project actually imports. Before relying on a version,
+# confirm it inside the container with:  docker exec notebook pip freeze
+
+# --- Core data science ---
+numpy==2.0.2
+pandas==3.0.6
+scipy==1.13.1
+scikit-learn==1.9.0
+xgboost==3.4.1
+
+# --- Plotting ---
+matplotlib==3.11.2
+seaborn==0.13.2
+
+# --- Notebooks ---
+jupyterlab==4.6.4
+
+# --- Optional: deep learning / model export ---
+# Large installs. The LinuxONE container already has these, so teammates only
+# need them locally if they are working on that part. Uncomment as needed.
+# tensorflow==2.18.1
+# keras==3.14.0
+# onnx==1.22.0
+# torch is installed in the container as a CPU build (2.11.0+cpu); locally use
+# the install command from https://pytorch.org rather than pinning it here.
