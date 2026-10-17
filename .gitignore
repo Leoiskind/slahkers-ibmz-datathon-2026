@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project data and artefacts. Everything under data/ is committed for now so the
+# VM and teammates get it with `git pull`; models are not.
+models/
+*.parquet
+*.zip
+!data/**/*.zip
+*.gguf
