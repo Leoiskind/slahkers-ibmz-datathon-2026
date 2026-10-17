@@ -219,6 +219,10 @@ def run_peak(journeys, dep, peak, cfg, out_dir, version):
     if missing:
         log.warning("features not in data, skipped: %s", missing)
     check_features(features)
+    incomplete = df[features].isna().any(axis=1)
+    if incomplete.any():
+        log.warning("dropping %d trains with missing feature values", int(incomplete.sum()))
+        df = df[~incomplete].reset_index(drop=True)
 
     models = [m for m in cfg.models if m != "keras" or has_tensorflow()]
     if "keras" in cfg.models and "keras" not in models:
@@ -317,16 +321,26 @@ def main():
     cfg_proj = load_config()
     proc = cfg_proj["paths"]["data_dir"] / "processed"
     dep = pd.read_parquet(proc / "station_deprivation.parquet")
+    weather_path = proc / "weather_hourly.parquet"
+    weather = pd.read_parquet(weather_path) if weather_path.exists() else None
+    if weather is None:
+        log.warning("no %s: run python -m src.weather to add rain/wind features", weather_path.name)
     if args.synthetic:
         from src.synthetic import make_outcomes
-        journeys = make_outcomes(pd.read_parquet(proc / "timetable_trains.parquet"), dep,
-                                 effect=args.effect, seed=args.seed)
+        trains = pd.read_parquet(proc / "timetable_trains.parquet")
+        if weather is not None:
+            from src.weather import add_weather
+            trains = add_weather(trains, weather)
+        journeys = make_outcomes(trains, dep, effect=args.effect, seed=args.seed)
         version = f"{args.version}-synthetic"
     else:
         path = proc / "journeys.parquet"
         if not path.exists():
             raise SystemExit(f"{path} not found: real outcomes not built yet (use --synthetic to demo)")
         journeys, version = pd.read_parquet(path), args.version
+        if weather is not None and "rain_mm" not in journeys:
+            from src.weather import add_weather
+            journeys = add_weather(journeys, weather)
 
     cfg = ModelConfig(profile=args.profile, seed=args.seed)
     for peak in (["morning", "evening"] if args.peak == "both" else [args.peak]):

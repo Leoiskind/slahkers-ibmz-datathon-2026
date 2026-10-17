@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config import load_config  # noqa: E402
 from src.models import ModelConfig, check_features, run_peak  # noqa: E402
 from src.synthetic import make_outcomes  # noqa: E402
+from src.weather import add_weather  # noqa: E402
 
 N_DATES = 20  # a sample of weekdays keeps the test quick
 
@@ -29,6 +30,8 @@ def _data(effect, seed):
     dates = sorted(trains["service_date"].unique())[-N_DATES:]
     trains = trains[trains["service_date"].isin(dates) & (trains["peak"] == "morning")]
     dep = pd.read_parquet(proc / "station_deprivation.parquet")
+    if (proc / "weather_hourly.parquet").exists():
+        trains = add_weather(trains, pd.read_parquet(proc / "weather_hourly.parquet"))
     return make_outcomes(trains, dep, effect=effect, seed=seed), dep
 
 
