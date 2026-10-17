@@ -1,3 +1,5 @@
+# USE THIS TO REMEMBER HOW TO QUERY API
+
 
 import requests
 import json
