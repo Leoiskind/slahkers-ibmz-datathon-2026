@@ -62,6 +62,7 @@ class ModelConfig:
     features: list = field(default_factory=lambda: list(FEATURES))
     models: tuple = ("logreg", "xgb", "keras")
     primary: str = "logreg"
+    target: str = "late_or_cancelled"  # recorded in metadata; see src/journeys.py for the HSP rule
 
 
 def check_features(features):
@@ -274,7 +275,7 @@ def run_peak(journeys, dep, peak, cfg, out_dir, version):
                       ("numpy", "pandas", "scikit-learn", "xgboost", "tensorflow")},
         "created": dt.datetime.now().isoformat(timespec="seconds"),
         "source": sorted(df["source"].unique().tolist()) if "source" in df else None,
-        "features": features, "primary_model": cfg.primary, "models": models,
+        "target": cfg.target, "features": features, "primary_model": cfg.primary, "models": models,
         "n_trains": int(len(df)), "n_stations": int(df["station_crs"].nunique()),
         "failure_rate": float(y.mean()), "seed": cfg.seed, "n_folds": cfg.n_folds, "n_boot": cfg.n_boot,
         **results,
@@ -295,7 +296,7 @@ def _version(dist):
 
 def summarise(meta):
     lines = [f"{meta['peak']}: {meta['n_trains']} trains, {meta['n_stations']} stations, "
-             f"failure rate {meta['failure_rate']:.3f}, source {meta['source']}"]
+             f"failure rate {meta['failure_rate']:.3f}, source {meta['source']}, target {meta.get('target')}"]
     for name, m in meta["metrics"].items():
         t = meta["tests"][name]
         lines.append(f"  {name:7s} AUC {m['roc_auc']:.3f}  Brier {m['brier']:.4f} (baseline {m['brier_baseline']:.4f})"
@@ -342,7 +343,8 @@ def main():
             from src.weather import add_weather
             journeys = add_weather(journeys, weather)
 
-    cfg = ModelConfig(profile=args.profile, seed=args.seed)
+    target = "late_or_cancelled_synthetic" if args.synthetic else "late_or_cancelled_hsp_recorded"
+    cfg = ModelConfig(profile=args.profile, seed=args.seed, target=target)
     for peak in (["morning", "evening"] if args.peak == "both" else [args.peak]):
         print(summarise(run_peak(journeys, dep, peak, cfg, ROOT / "models", version)))
 

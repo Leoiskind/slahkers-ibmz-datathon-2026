@@ -62,6 +62,7 @@
 - **Per station, per peak:** **`failure_rate`** = (late + cancelled) / scheduled (**main measure, morning**); `cancel_rate`; `late_rate`; `mean_delay_min`; `p90_delay_min`; `delay_per_30` (both peaks); `n_scheduled` (flag < 30); `n_missing`.
 - Uncertainty: per-station 95% bootstrap **resampling service dates**.
 - 10 minutes is a sensitivity check only.
+- **HSP data (agreed 17 Oct, `src/journeys.py`):** an HSP-recorded train with no actual time at the measuring stop is `cancelled` if it has a `late_canc_reason` or no actuals anywhere; otherwise `missing`. Trains **absent** from HSP are not counted: HSP omits many runs that did run (RTT check, 5 Oct: 37 of 38 absent trains ran; HSP holds ~72% of timetabled trains). All rates are "among trains HSP recorded". Coverage is not clearly related to deprivation (`hsp_coverage.parquet`).
 
 ### 3.3 Model: risk adjustment → `docs/model_method.md`, code in `src/models.py`
 - **Purpose:** expected failure rate given **position only** (like expected goals in football). Residual = observed − expected.
@@ -185,14 +186,17 @@ Local setup: **Python 3.12** venv (`py -3.12 -m venv .venv`), then `pip install 
 
 | Part | Status |
 |---|---|
-| config, weather, schema, trains table, metrics | Built and tested on **synthetic** data (earlier work) |
+| Timetable (`src/timetable.py`) | Network Rail SCHEDULE extract → every GM peak journey (18 May – 16 Oct); matches RTT on 121/125 trains |
+| Deprivation (`src/geo.py`) | `build_station_deprivation`: LSOA nearest-station (Cam's matches) × IMD 2025 → 90 stations |
+| Weather (`src/weather.py`) | Hourly rain/wind per GM station (Open-Meteo), joined by station + scheduled hour |
+| Real trains (`src/journeys.py`) | HSP 5–16 Oct → `journeys.parquet`: 9,359 trains, 84 stations, both peaks |
+| config, schema, metrics | Older code built and tested on **synthetic** data |
 | `src/hsp.py` | Fetch and cache only; no credentials |
-| `src/geo.py` | **Rework needed:** built for the old nearest-postcode method; switch to LSOA centroids + nearest-station assignment |
-| `src/models.py` + `tests/test_models_synthetic.py` | Written; logreg and sklearn-boosting paths run on synthetic data. **XGBoost and Keras paths not yet executed**: run the smoke test in the IBM container. |
-| RTT adapter (`src/rtt.py`) | Not started. Write it against one saved real response. |
+| `src/models.py` + `tests/test_models_synthetic.py` | logreg + XGBoost run on synthetic (planted effect recovered) and on real HSP data. **Keras path not yet executed**: run in the IBM container. |
+| RTT adapter (`src/rtt.py`) | Written and verified; pull stopped (account limits 10/min, 100/h, 1000/day). Partial cache used for validation only |
 | Station list and sample, `possible_hubs` | Not started |
 | Briefs (`src/brief.py`), `run_all.py` | Not started |
-| Real train data | **None yet**; access not confirmed |
+| Real train data | HSP 5–16 Oct (see `src/journeys.py` for the cancellation rule) |
 
 ---
 
