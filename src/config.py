@@ -16,15 +16,29 @@ def load_config(path=None):
     return cfg
 
 
-def hsp_credentials():
-    """Read HSP settings from the environment (load .env if python-dotenv is absent by hand)."""
+def load_env():
+    """Copy KEY=value lines from .env into os.environ (no python-dotenv needed)."""
     env_file = ROOT / ".env"
     if env_file.exists():
         for line in env_file.read_text(encoding="utf-8").splitlines():
             if "=" in line and not line.lstrip().startswith("#"):
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
+
+
+def hsp_credentials():
+    """Read HSP settings from the environment / .env."""
+    load_env()
     missing = [k for k in ("HSP_URL", "HSP_USERNAME", "HSP_PASSWORD") if not os.environ.get(k)]
     if missing:
         raise RuntimeError(f"Missing HSP settings in .env: {', '.join(missing)}")
     return os.environ["HSP_URL"], os.environ["HSP_USERNAME"], os.environ["HSP_PASSWORD"]
+
+
+def rtt_token():
+    """Read the Realtime Trains bearer token from the environment / .env."""
+    load_env()
+    token = os.environ.get("RTT_TOKEN")
+    if not token:
+        raise RuntimeError("Missing RTT_TOKEN in .env (get one at https://api-portal.rtt.io/)")
+    return token

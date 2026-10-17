@@ -223,6 +223,10 @@ __marimo__/
 # VM and teammates get it with `git pull`; models are not.
 models/
 *.parquet
+!data/**/*.parquet
 *.zip
 !data/**/*.zip
 *.gguf
+# Network Rail timetable extract is >100 MB (GitHub limit); src.timetable reuses
+# data/cache/timetable/gm_schedules.json, so the VM never needs the raw file.
+data/raw/timetable/
