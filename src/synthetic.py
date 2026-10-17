@@ -7,6 +7,7 @@ cancelled) drawn from a known logistic model:
                     + 0.3 [hub time 08:00-08:59 or 17:00-17:59]
                     + station noise N(0, 0.25) + day noise N(0, 0.3)
                     + effect * z(dep_score)          <- the PLANTED deprivation effect
+                    + 0.2 z(rain_mm)                 (only if weather columns are present)
 
 b0 is solved so the overall failure rate is `base_rate`. With effect > 0 the model's
 residuals should correlate positively with dep_score; with effect = 0 they should not.
@@ -43,7 +44,10 @@ def make_outcomes(trains, dep, effect=0.5, base_rate=0.15, seed=0):
     eta = (0.4 * _z(df["minutes_to_hub"]) + 0.3 * _z(df["stops_before"])
            + 0.2 * _z(df["stops_between"]) + 0.3 * peak_hour
            + df["station_crs"].map(st_noise) + df["service_date"].map(day_noise)
-           + effect * dep_z).to_numpy()
+           + effect * dep_z)
+    if "rain_mm" in df:  # small known weather effect, so the test shows the feature is used
+        eta = eta + 0.2 * _z(df["rain_mm"].fillna(0))
+    eta = eta.to_numpy()
     lo, hi = -10.0, 5.0  # solve b0 so mean(P) = base_rate
     for _ in range(60):
         b0 = (lo + hi) / 2

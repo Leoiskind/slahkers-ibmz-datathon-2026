@@ -131,3 +131,11 @@ python -c "from src.config import hsp_credentials; hsp_credentials(); print('HSP
 ### Running on LinuxONE
 
 The final solution runs on the IBM LinuxONE Community Cloud, inside IBM's s390x Jupyter Lab container, which already includes these libraries. `requirements.txt` mirrors that container's versions so code behaves the same locally and on the VM. Heavy packages such as TensorFlow and PyTorch are optional locally (see comments in `requirements.txt`).
+
+## Data sources
+
+| Source | Used for | Licence / attribution |
+|---|---|---|
+| [Open-Meteo historical weather API](https://open-meteo.com/en/docs/historical-weather-api) | Hourly rain (mm) and wind (km/h) per GM station (`src/weather.py`) | [CC BY 4.0](https://open-meteo.com/en/license): weather data by Open-Meteo.com |
+| [Network Rail SCHEDULE feed](https://wiki.openraildata.com/index.php/SCHEDULE) | Planned GM timetable (`src/timetable.py`) | [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/), contains Network Rail data |
+| [English Indices of Deprivation 2025](https://deprivation.communities.gov.uk/download-all) | IMD rank per LSOA (`src/geo.py`) | Open Government Licence |
