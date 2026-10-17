@@ -15,6 +15,12 @@ scipy==1.13.1
 scikit-learn==1.9.0
 xgboost==3.4.1
 
+# --- Ingestion and storage ---
+# Versions not yet confirmed against the container: check `docker exec notebook pip freeze`.
+requests
+pyarrow
+pyyaml
+
 # --- Plotting ---
 matplotlib==3.11.2
 seaborn==0.13.2

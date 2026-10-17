@@ -84,6 +84,43 @@ python -m pip install -r requirements.txt
 python -c "import numpy, pandas, sklearn; print('OK')"
 ```
 
+### 6. Set up your `.env` (API keys)
+
+API keys and passwords live in a `.env` file in the root of the repo. It is gitignored, so it is never committed and never reaches GitHub. Copy the template:
+
+**Windows (PowerShell)**
+
+```powershell
+Copy-Item .env.example .env
+```
+
+**macOS / Linux**
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in the values you have. Leave the others blank:
+
+| Key | What it is | Where to get it |
+|---|---|---|
+| `RTT_TOKEN` | Realtime Trains API bearer token | Sign up at https://api-portal.rtt.io/ |
+| `HSP_URL`, `HSP_USERNAME`, `HSP_PASSWORD` | National Rail Historical Service Performance | The HSP product page on https://raildata.org.uk/ |
+
+Rules for the file:
+
+- Write one `KEY=value` per line, with no quotes and no spaces around `=`.
+- Never paste a token into code, a notebook, a commit or a chat message.
+- `src/config.py` reads `.env` automatically, so you don't need to `export` anything.
+
+To check that your HSP settings load (it names any missing keys and never prints the values):
+
+```bash
+python -c "from src.config import hsp_credentials; hsp_credentials(); print('HSP settings OK')"
+```
+
+**On the LinuxONE VM:** `git pull` does not bring `.env` across, because it is gitignored. The teammate running the VM creates it there once, in `~/shared/slahkers-ibmz-datathon-2026/.env`. That folder is the same as `/home/jovyan/shared/slahkers-ibmz-datathon-2026/.env` inside the container.
+
 ### Everyday use
 
 - Activate the environment every time you open a new terminal (the activate line from step 3).

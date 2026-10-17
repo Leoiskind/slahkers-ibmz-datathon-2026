@@ -9,6 +9,6 @@ def filter_csv(input_path, output_path, keyword="Manchester", keep_header=True):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python filter_csv.py input.csv output.csv")
+        print("Usage: python scripts/filter_csv.py input.csv output.csv")
         sys.exit(1)
     filter_csv(sys.argv[1], sys.argv[2])
