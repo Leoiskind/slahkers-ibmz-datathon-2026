@@ -1,10 +1,12 @@
-"""Station -> postcode -> LSOA -> deprivation join.
+"""Station deprivation.
 
+CURRENT: build_station_deprivation() (LSOA method) -> data/processed/station_deprivation.parquet
+LEGACY (postcode method, superseded): build_stations() / build_station_area() below:
 Stage 1: station coordinates (config lat/lon, else a NaPTAN-style CSV) -> nearest
          postcode via postcodes.io (cached) -> data/processed/stations.parquet
 Stage 2: join postcode to the deprivation lookup -> data/processed/station_area.parquet
 
-Run:  python -m src.geo
+Run:  python -m src.geo      (builds station_deprivation)
 """
 import json
 import logging
@@ -12,7 +14,7 @@ import logging
 import pandas as pd
 import requests
 
-from src.config import load_config
+from src.config import ROOT, load_config
 
 log = logging.getLogger(__name__)
 POSTCODES_IO = "https://api.postcodes.io/postcodes"
@@ -113,11 +115,51 @@ def build_station_area(cfg, stations):
     return out
 
 
+IMD_RANK = "LSOA containing postcode - Index of Multiple Deprivation (IMD) Rank (where 1 is most deprived)"
+IMD_DECILE = "LSOA containing postcode - Index of Multiple Deprivation (IMD) Decile (where 1 is most deprived 10% of LSOAs)"
+
+
+def national_max_rank(cfg):
+    """Largest IMD rank in the national file (= number of LSOAs in England)."""
+    src = ROOT / cfg["paths"]["deprivation_source"]
+    return max(int(c[IMD_RANK].max()) for c in pd.read_csv(src, usecols=[IMD_RANK], chunksize=500_000))
+
+
+def build_station_deprivation(cfg):
+    """LSOA method (docs: deprivation_method): each LSOA is assigned to its NEAREST station
+    within 1.5 km (Cam's lsoa_station_matches.csv lists every station within 1.5 km, so keep
+    the nearest), joined to IMD 2025. deprivation_pct = 1 - rank/max_rank (higher = more deprived).
+    Note: the matches use 2011 LSOA codes, IMD uses 2021; codes that changed don't join (logged)."""
+    m = pd.read_csv(ROOT / cfg["paths"]["lsoa_station_matches"])
+    near = m.sort_values("DISTANCE").drop_duplicates("LSOA")
+    imd = pd.read_csv(cfg["paths"]["deprivation_lookup"], usecols=["LSOA code (2021)", IMD_RANK, IMD_DECILE])
+    imd = imd.drop_duplicates("LSOA code (2021)").rename(
+        columns={"LSOA code (2021)": "LSOA", IMD_RANK: "imd_rank", IMD_DECILE: "imd_decile"})
+    j = near.merge(imd, on="LSOA", how="inner")
+    log.info("LSOAs: %d nearest-station matches, %d joined to IMD (%.1f%%)",
+             len(near), len(j), 100 * len(j) / len(near))
+    max_rank = national_max_rank(cfg)
+    j["deprivation_pct"] = 1 - j["imd_rank"] / max_rank
+    dep = j.groupby("STATION").agg(
+        dep_score=("deprivation_pct", "mean"),
+        dep_median=("deprivation_pct", "median"),
+        dep_share_top20=("imd_decile", lambda d: (d <= 2).mean()),
+        n_lsoa=("LSOA", "size"),
+    ).reset_index().rename(columns={"STATION": "station_crs"})
+    dep["low_n_lsoa"] = dep["n_lsoa"] < 3
+    dep["max_rank"] = max_rank
+    out = cfg["paths"]["data_dir"] / "processed" / "station_deprivation.parquet"
+    dep.to_parquet(out, index=False)
+    log.info("station_deprivation: %d stations (%d with < 3 LSOAs), max_rank %d -> %s",
+             len(dep), int(dep["low_n_lsoa"].sum()), max_rank, out)
+    return dep
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     cfg = load_config()
-    area = build_station_area(cfg, build_stations(cfg))
-    print(area[["crs", "name", "role", "postcode", "lsoa_name", "imd_decile"]].to_string(index=False))
+    dep = build_station_deprivation(cfg)
+    print(dep.sort_values("dep_score", ascending=False).round(3).to_string(index=False))
 
 
 if __name__ == "__main__":

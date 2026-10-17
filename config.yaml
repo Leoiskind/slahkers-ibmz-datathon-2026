@@ -37,6 +37,7 @@ paths:
   stations_csv: data/raw/uk/uk_stations.csv           # station_code, station_name, latitude, longitude
   gm_stations_csv: data/raw/manchester_old/manchester_stations_with_coords.csv
   naptan_csv: data/raw/uk/naptan_uk_stations.csv
+  lsoa_station_matches: data/raw/manchester_old/lsoa_station_matches.csv  # LSOA -> stations within 1.5 km (Cam)
   lsoa_centroids: data/raw/uk/lsoa_centroids_2011.csv  # 2011 LSOAs: swap for the 2021 PWC file
   deprivation_lookup: data/processed/gm_deprivation.csv  # built by src.prep_deprivation
   data_dir: data
