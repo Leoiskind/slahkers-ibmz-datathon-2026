@@ -16,8 +16,8 @@ URL = "https://hsp-prod.rockshore.net/api/v1/serviceMetrics"
 METHOD = "POST"
 
 # Basic Authentication
-USERNAME = "daniel.mason-4@student.manchester.ac.uk"
-PASSWORD = "Seska123."
+USERNAME = ""
+PASSWORD = ""
 
 # Request Headers
 HEADERS = {
