@@ -30,6 +30,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from src.tableio import read_table, table_exists, write_table
 from scipy import stats
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score
@@ -321,14 +322,14 @@ def main():
 
     cfg_proj = load_config()
     proc = cfg_proj["paths"]["data_dir"] / "processed"
-    dep = pd.read_parquet(proc / "station_deprivation.parquet")
+    dep = read_table(proc / "station_deprivation.parquet")
     weather_path = proc / "weather_hourly.parquet"
-    weather = pd.read_parquet(weather_path) if weather_path.exists() else None
+    weather = read_table(weather_path) if table_exists(weather_path) else None
     if weather is None:
         log.warning("no %s: run python -m src.weather to add rain/wind features", weather_path.name)
     if args.synthetic:
         from src.synthetic import make_outcomes
-        trains = pd.read_parquet(proc / "timetable_trains.parquet")
+        trains = read_table(proc / "timetable_trains.parquet")
         if weather is not None:
             from src.weather import add_weather
             trains = add_weather(trains, weather)
@@ -336,9 +337,9 @@ def main():
         version = f"{args.version}-synthetic"
     else:
         path = proc / "journeys.parquet"
-        if not path.exists():
+        if not table_exists(path):
             raise SystemExit(f"{path} not found: real outcomes not built yet (use --synthetic to demo)")
-        journeys, version = pd.read_parquet(path), args.version
+        journeys, version = read_table(path), args.version
         if weather is not None and "rain_mm" not in journeys:
             from src.weather import add_weather
             journeys = add_weather(journeys, weather)

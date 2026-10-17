@@ -32,6 +32,7 @@ import pandas as pd
 import requests
 
 from src.config import load_config, rtt_token
+from src.tableio import read_table, table_exists, write_table
 from src.timetable import BANK_HOLIDAYS
 
 log = logging.getLogger(__name__)
@@ -364,8 +365,7 @@ def main():
     df = flatten(cfg, *pull(cfg, dates, offline=args.flatten))
     out = cfg["paths"]["data_dir"] / "processed" / "rtt_trains.parquet"
     out.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(out, index=False)
-    df.to_csv(out.with_suffix(".csv"), index=False)
+    write_table(df, out)
     print(f"rtt_trains: {len(df)} rows -> {out} (+ .csv); {_stats['network']} network calls, "
           f"{_stats['cache']} cached")
     if len(df):

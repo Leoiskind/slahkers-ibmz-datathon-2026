@@ -17,6 +17,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.config import load_config  # noqa: E402
+from src.tableio import read_table, table_exists, write_table
 from src.models import ModelConfig, check_features, run_peak  # noqa: E402
 from src.synthetic import make_outcomes  # noqa: E402
 from src.weather import add_weather  # noqa: E402
@@ -26,12 +27,12 @@ N_DATES = 20  # a sample of weekdays keeps the test quick
 
 def _data(effect, seed):
     proc = load_config()["paths"]["data_dir"] / "processed"
-    trains = pd.read_parquet(proc / "timetable_trains.parquet")
+    trains = read_table(proc / "timetable_trains.parquet")
     dates = sorted(trains["service_date"].unique())[-N_DATES:]
     trains = trains[trains["service_date"].isin(dates) & (trains["peak"] == "morning")]
-    dep = pd.read_parquet(proc / "station_deprivation.parquet")
-    if (proc / "weather_hourly.parquet").exists():
-        trains = add_weather(trains, pd.read_parquet(proc / "weather_hourly.parquet"))
+    dep = read_table(proc / "station_deprivation.parquet")
+    if table_exists(proc / "weather_hourly.parquet"):
+        trains = add_weather(trains, read_table(proc / "weather_hourly.parquet"))
     return make_outcomes(trains, dep, effect=effect, seed=seed), dep
 
 

@@ -16,6 +16,7 @@ import pandas as pd
 import requests
 
 from src.config import ROOT, load_config
+from src.tableio import read_table, table_exists, write_table
 
 log = logging.getLogger(__name__)
 URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -38,7 +39,7 @@ def fetch_station(crs, lat, lon, start, end, cache_dir):
 def build_weather(cfg, start=None, end=None):
     proc = cfg["paths"]["data_dir"] / "processed"
     if not (start and end):
-        dates = pd.read_parquet(proc / "timetable_trains.parquet", columns=["service_date"])["service_date"]
+        dates = read_table(proc / "timetable_trains.parquet", columns=["service_date"])["service_date"]
         start, end = start or str(dates.min()), end or str(dates.max())
     stations = pd.read_csv(ROOT / cfg["timetable"]["gm_stations_csv"])
     cache = cfg["paths"]["data_dir"] / "cache" / "weather"
@@ -54,7 +55,7 @@ def build_weather(cfg, start=None, end=None):
                                     "rain_mm": h["precipitation"], "wind_kmh": h["wind_speed_10m"]}))
     out = pd.concat(frames, ignore_index=True)
     missing = int(out[["rain_mm", "wind_kmh"]].isna().any(axis=1).sum())
-    out.to_parquet(proc / "weather_hourly.parquet", index=False)
+    write_table(out, proc / "weather_hourly.parquet")
     print(f"weather: {len(out)} hourly rows, {out.station_crs.nunique()} stations, {start}..{end}, "
           f"{missing} hours missing; {calls} network calls -> {proc / 'weather_hourly.parquet'}")
     return out

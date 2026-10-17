@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from src.config import ROOT, load_config
+from src.tableio import read_table, table_exists, write_table
 from src.models import platform_tag
 
 log = logging.getLogger(__name__)
@@ -227,15 +228,15 @@ def main_chart(t, meta, path):
 
 def build_evidence(cfg, version=None):
     proc = cfg["paths"]["data_dir"] / "processed"
-    journeys = pd.read_parquet(proc / "journeys.parquet")
-    dep = pd.read_parquet(proc / "station_deprivation.parquet")
+    journeys = read_table(proc / "journeys.parquet")
+    dep = read_table(proc / "station_deprivation.parquet")
     model_dir = latest_model_dir(version)
     metas = {p: json.loads((model_dir / p / "metadata.json").read_text(encoding="utf-8"))
              for p in ("morning", "evening")}
     log.info("using model outputs from %s", model_dir)
 
     t = station_table(journeys, dep, model_dir)
-    t.to_parquet(proc / "station_quality.parquet", index=False)
+    write_table(t, proc / "station_quality.parquet")
     t.round(4).to_csv(proc / "station_quality.csv", index=False)
 
     out = proc / "report_inputs"

@@ -12,7 +12,7 @@ deprivation_lads: [Bolton, Bury, Manchester, Oldham, Rochdale, Salford, Stockpor
 
 origins:         # postcodes must fall in deprivation_lads (Wilmslow is Cheshire East: add it to the list if used)
   - {crs: LVM, name: Levenshulme}      # VERIFY
-  - {crs: BUA, name: Burnage}          # VERIFY
+  - {crs: BNA, name: Burnage}
   - {crs: EDY, name: East Didsbury}    # VERIFY
   - {crs: GTO, name: Gorton}           # VERIFY
   - {crs: FRF, name: Fairfield}        # VERIFY

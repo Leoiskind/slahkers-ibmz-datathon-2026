@@ -29,6 +29,7 @@ import logging
 import pandas as pd
 
 from src.config import ROOT, load_config
+from src.tableio import read_table, table_exists, write_table
 
 log = logging.getLogger(__name__)
 HSP_CSV = "data/processed/train_data.csv"
@@ -80,7 +81,7 @@ def load_hsp():
 
 
 def timetable_window(cfg, dates):
-    t = pd.read_parquet(cfg["paths"]["data_dir"] / "processed" / "timetable_trains.parquet")
+    t = read_table(cfg["paths"]["data_dir"] / "processed" / "timetable_trains.parquet")
     t = t[t["service_date"].isin(dates)].copy()
     morning = t["peak"] == "morning"
     t["origin_hhmm"] = t["sched_from_hhmm"].where(morning, t["sched_to_hhmm"])
@@ -106,8 +107,8 @@ def build_journeys(cfg):
     proc = cfg["paths"]["data_dir"] / "processed"
     hsp = load_hsp()
     tt = timetable_window(cfg, set(hsp["service_date"]))
-    dep = pd.read_parquet(proc / "station_deprivation.parquet")
-    coverage(hsp, tt, dep).to_parquet(proc / "hsp_coverage.parquet", index=False)
+    dep = read_table(proc / "station_deprivation.parquet")
+    write_table(coverage(hsp, tt, dep), proc / "hsp_coverage.parquet")
 
     still_missing = hsp["outcome"] == "missing"
     log.info("excluding %d rows still missing (by station x peak: %d groups)", int(still_missing.sum()),
@@ -125,10 +126,10 @@ def build_journeys(cfg):
     j["failed"] = j["outcome"].isin(["late", "cancelled"])
     j["source"] = "hsp"
     weather = proc / "weather_hourly.parquet"
-    if weather.exists():
-        j = add_weather(j, pd.read_parquet(weather))
+    if table_exists(weather):
+        j = add_weather(j, read_table(weather))
     j = j.drop(columns=["origin_hhmm", "hub_hhmm"])
-    j.to_parquet(proc / "journeys.parquet", index=False)
+    write_table(j, proc / "journeys.parquet")
 
     print(f"journeys: {len(j)} trains, {j.station_crs.nunique()} stations, "
           f"{j.service_date.nunique()} weekdays -> {proc / 'journeys.parquet'}")

@@ -105,7 +105,7 @@
 **Realtime Trains details (verify every field on a real response before parsing):**
 - Endpoints: `/api/info` (check `historyRestrictToDays`, default 14), `/gb-nr/location` (`code`, `filterFrom`, `filterTo`, `timeFrom`, `timeTo`, max 23 h 59 min window), `/gb-nr/service` (`identity` + `departureDate`).
 - Fields: `scheduleAdvertised`, `realtimeActual`, `realtimeAdvertisedLateness`, `isCancelled`, `cancellationReasonCode`, `reasons`.
-- Limits: 30 requests/minute, 750/hour, 9,000/day. **Never put the token in a web page or the repo.**
+- Limits: published defaults are 30/minute, 750/hour, 9,000/day, but **our account is limited to 10/minute, 100/hour, 1,000/day**. **Never put the token in a web page or the repo.**
 - **Morning:** query each possible hub with `filterFrom=<origin>`; keep each train's earliest hub arrival. **Evening:** hub with `filterTo=<origin>`, plus origin with `filterFrom=<hub>`, matched on train identity. About 3 requests per origin per day.
 - Scheduled times and stopping patterns repeat on weekdays: fetch `/gb-nr/service` for **one day per regular train** and reuse for `minutes_to_hub`, `stops_between` and `stops_before`.
 
@@ -113,7 +113,7 @@
 
 ## 5. Pipeline and file contracts
 
-Each stage reads the previous stage's file. Everything goes under `data/`, which is committed for now (so the VM gets it via `git pull`). External calls are cached in `data/cache/` and safe to rerun.
+Each stage reads the previous stage's file via `src/tableio.py` (`read_table`/`write_table`): every table is written as `.parquet` **and** `.csv`, and read from the CSV when pyarrow is missing (the s390x IBM container has no pyarrow). Never call `pd.read_parquet`/`to_parquet` directly. Everything goes under `data/`, which is committed for now (so the VM gets it via `git pull`). External calls are cached in `data/cache/` and safe to rerun.
 
 | Stage | Module | Output | Key columns |
 |---|---|---|---|

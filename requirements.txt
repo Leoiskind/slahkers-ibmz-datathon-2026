@@ -18,7 +18,7 @@ xgboost==3.4.1
 # --- Ingestion and storage ---
 # Versions not yet confirmed against the container: check `docker exec notebook pip freeze`.
 requests
-pyarrow
+pyarrow        # optional: not available on s390x; src/tableio.py falls back to CSV
 pyyaml
 
 # --- Plotting ---

@@ -26,6 +26,7 @@ import logging
 import pandas as pd
 
 from src.config import ROOT, load_config
+from src.tableio import read_table, table_exists, write_table
 
 log = logging.getLogger(__name__)
 # England & Wales bank holidays 2026 (weekdays only matter: we use weekday peaks)
@@ -201,8 +202,7 @@ def main():
     df = df.sort_values(["station_crs", "service_date", "peak", "sched_hub_hhmm"]).reset_index(drop=True)
     out = cfg["paths"]["data_dir"] / "processed" / "timetable_trains.parquet"
     out.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(out, index=False)
-    df.to_csv(out.with_suffix(".csv"), index=False)
+    write_table(df, out)
     print(f"timetable_trains: {len(df)} rows, {df.station_crs.nunique()} GM stations, "
           f"{df.service_date.nunique()} weekdays -> {out} (+ .csv)")
     print(f"planned cancellations (STP C): {int(df.planned_cancel.sum())}")

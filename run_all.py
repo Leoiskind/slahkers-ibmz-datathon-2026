@@ -11,6 +11,7 @@ import subprocess
 import sys
 
 from src.config import load_config
+from src.tableio import table_exists
 
 
 def stage(*args):
@@ -25,7 +26,7 @@ def main():
     cfg = load_config()
     proc = cfg["paths"]["data_dir"] / "processed"
 
-    if not (proc / "timetable_trains.parquet").exists():
+    if not table_exists(proc / "timetable_trains.parquet"):
         stage("src.timetable")
     stage("src.geo")
     stage("src.weather")

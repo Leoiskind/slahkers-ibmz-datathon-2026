@@ -15,6 +15,7 @@ import pandas as pd
 import requests
 
 from src.config import ROOT, load_config
+from src.tableio import read_table, table_exists, write_table
 
 log = logging.getLogger(__name__)
 POSTCODES_IO = "https://api.postcodes.io/postcodes"
@@ -80,7 +81,7 @@ def build_stations(cfg):
     df["lsoa_name_api"] = [r.get("lsoa21") for r in recs]
     out = cfg["paths"]["data_dir"] / "processed" / "stations.parquet"
     out.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(out, index=False)
+    write_table(df, out)
     log.info("stations: %d rows -> %s", len(df), out)
     return df
 
@@ -111,7 +112,7 @@ def build_station_area(cfg, stations):
             "Origin postcodes not in the deprivation lookup (outside its area?):\n"
             + unmatched[["crs", "name", "postcode"]].to_string(index=False))
     path = cfg["paths"]["data_dir"] / "processed" / "station_area.parquet"
-    out.to_parquet(path, index=False)
+    write_table(out, path)
     return out
 
 
@@ -149,7 +150,7 @@ def build_station_deprivation(cfg):
     dep["low_n_lsoa"] = dep["n_lsoa"] < 3
     dep["max_rank"] = max_rank
     out = cfg["paths"]["data_dir"] / "processed" / "station_deprivation.parquet"
-    dep.to_parquet(out, index=False)
+    write_table(dep, out)
     log.info("station_deprivation: %d stations (%d with < 3 LSOAs), max_rank %d -> %s",
              len(dep), int(dep["low_n_lsoa"].sum()), max_rank, out)
     return dep
