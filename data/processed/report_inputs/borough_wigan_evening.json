@@ -1,0 +1,24 @@
+{
+  "level": "borough",
+  "borough": "Wigan",
+  "peak": "evening",
+  "stations": 9,
+  "trains": 520,
+  "failure_rate_pct": 39,
+  "late_rate_pct": 38,
+  "cancel_rate_pct": 1,
+  "greater_manchester_failure_rate_pct": 26,
+  "difference_from_greater_manchester_points": 13,
+  "most_reliable_station": "Atherton",
+  "most_reliable_station_failure_pct": 15,
+  "least_reliable_station": "Pemberton",
+  "least_reliable_station_failure_pct": 80,
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "With few stations per borough there is no separate statistical test for a borough; compare with the Greater Manchester result."
+  ]
+}

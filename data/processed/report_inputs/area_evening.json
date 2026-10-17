@@ -1,0 +1,47 @@
+{
+  "level": "area",
+  "area": "Greater Manchester",
+  "peak": "evening",
+  "stations": 84,
+  "stations_in_deprivation_tests": 83,
+  "trains": 4294,
+  "weekdays": 10,
+  "failure_rate_pct": 26,
+  "late_rate_pct": 25,
+  "cancel_rate_pct": 1,
+  "raw_test": {
+    "rho": -0.15,
+    "ci": [
+      -0.37,
+      0.09
+    ]
+  },
+  "adjusted_test": {
+    "rho": -0.07,
+    "ci": [
+      -0.3,
+      0.16
+    ]
+  },
+  "most_deprived_third_failure_pct": 26,
+  "least_deprived_third_failure_pct": 32,
+  "worse_than_expected": [
+    "Gatley",
+    "Blackrod",
+    "Burnage"
+  ],
+  "better_than_expected": [
+    "Smithy Bridge",
+    "Moorside",
+    "Atherton"
+  ],
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "A station's reliability depends partly on its line and position on the network, which the expected rate accounts for only approximately."
+  ],
+  "note": "The main test is the morning peak; this evening summary is supporting evidence."
+}

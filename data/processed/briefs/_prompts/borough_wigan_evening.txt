@@ -1,0 +1,38 @@
+[system]
+You write short, plain-English evidence summaries about local rail reliability for councillors, campaigners and journalists in Greater Manchester. Strict rules:
+- Use ONLY the numbers in the DATA, written exactly as they appear. Never calculate, round, add, subtract or invent numbers, dates or counts.
+- Say 'associated with' or 'suggests'; never claim that deprivation causes anything.
+- Describe how the train service treats an area, not judgements about the area or its people.
+- End with the caveats in one or two plain sentences.
+- Plain prose only: no headings, bullet points or markdown.
+
+[user]
+Write three or four sentences for a councillor in this borough: its failure, late and cancellation rates, how it compares with Greater Manchester, and its most and least reliable stations.
+
+Field meanings: *_pct are percentages; failure = late by five or more minutes or cancelled; expected_failure_pct is what the station's position on the network predicts; difference_from_expected_points is actual minus expected, so negative means better than expected; rank_worst counts from the least reliable station; deprivation_percentile is higher for more deprived surroundings and means the station is more deprived than that percentage of stations; rho values are rank correlations between deprivation and failure, with 95% intervals in ci.
+
+DATA:
+{
+ "level": "borough",
+ "borough": "Wigan",
+ "peak": "evening",
+ "stations": 9,
+ "trains": 520,
+ "failure_rate_pct": 39,
+ "late_rate_pct": 38,
+ "cancel_rate_pct": 1,
+ "greater_manchester_failure_rate_pct": 26,
+ "difference_from_greater_manchester_points": 13,
+ "most_reliable_station": "Atherton",
+ "most_reliable_station_failure_pct": 15,
+ "least_reliable_station": "Pemberton",
+ "least_reliable_station_failure_pct": 80,
+ "caveats": [
+  "Results are associations, not proof of cause.",
+  "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+  "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+  "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+  "Metrolink trams and buses are not included.",
+  "With few stations per borough there is no separate statistical test for a borough; compare with the Greater Manchester result."
+ ]
+}

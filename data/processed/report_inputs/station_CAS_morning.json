@@ -1,0 +1,31 @@
+{
+  "level": "station",
+  "station": "Castleton",
+  "crs": "CAS",
+  "borough": "Rochdale",
+  "peak": "morning",
+  "trains": 14,
+  "weekdays": 10,
+  "failure_rate_pct": 36,
+  "failure_ci_pct": [
+    8,
+    60
+  ],
+  "late_rate_pct": 29,
+  "cancel_rate_pct": 7,
+  "expected_failure_pct": 30,
+  "difference_from_expected_points": 6,
+  "rank_worst": 25,
+  "of_stations": 84,
+  "deprivation_percentile": 74,
+  "share_of_nearby_areas_in_most_deprived_20pct": 14,
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "A station's reliability depends partly on its line and position on the network, which the expected rate accounts for only approximately.",
+    "Only 14 trains were recorded, so these figures are uncertain."
+  ]
+}

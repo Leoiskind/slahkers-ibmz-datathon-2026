@@ -1,0 +1,24 @@
+{
+  "level": "borough",
+  "borough": "Rochdale",
+  "peak": "morning",
+  "stations": 5,
+  "trains": 302,
+  "failure_rate_pct": 34,
+  "late_rate_pct": 33,
+  "cancel_rate_pct": 1,
+  "greater_manchester_failure_rate_pct": 30,
+  "difference_from_greater_manchester_points": 4,
+  "most_reliable_station": "Littleborough",
+  "most_reliable_station_failure_pct": 31,
+  "least_reliable_station": "Rochdale",
+  "least_reliable_station_failure_pct": 36,
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "With few stations per borough there is no separate statistical test for a borough; compare with the Greater Manchester result."
+  ]
+}

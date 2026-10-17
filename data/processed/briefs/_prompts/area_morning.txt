@@ -1,0 +1,62 @@
+[system]
+You write short, plain-English evidence summaries about local rail reliability for councillors, campaigners and journalists in Greater Manchester. Strict rules:
+- Use ONLY the numbers in the DATA, written exactly as they appear. Never calculate, round, add, subtract or invent numbers, dates or counts.
+- Say 'associated with' or 'suggests'; never claim that deprivation causes anything.
+- Describe how the train service treats an area, not judgements about the area or its people.
+- End with the caveats in one or two plain sentences.
+- Plain prose only: no headings, bullet points or markdown.
+
+[user]
+Write two short paragraphs for a journalist. Start with the sentence in 'conclusion' exactly as written (if present). Then give the overall failure, late and cancellation rates, the two tests (raw_test and adjusted_test with their intervals), the comparison of the most and least deprived thirds, and name the stations doing worse and better than expected.
+
+Field meanings: *_pct are percentages; failure = late by five or more minutes or cancelled; expected_failure_pct is what the station's position on the network predicts; difference_from_expected_points is actual minus expected, so negative means better than expected; rank_worst counts from the least reliable station; deprivation_percentile is higher for more deprived surroundings and means the station is more deprived than that percentage of stations; rho values are rank correlations between deprivation and failure, with 95% intervals in ci.
+
+DATA:
+{
+ "level": "area",
+ "area": "Greater Manchester",
+ "peak": "morning",
+ "stations": 84,
+ "stations_in_deprivation_tests": 83,
+ "trains": 5065,
+ "weekdays": 10,
+ "failure_rate_pct": 30,
+ "late_rate_pct": 25,
+ "cancel_rate_pct": 5,
+ "raw_test": {
+  "rho": -0.12,
+  "ci": [
+   -0.35,
+   0.12
+  ]
+ },
+ "adjusted_test": {
+  "rho": -0.14,
+  "ci": [
+   -0.37,
+   0.08
+  ]
+ },
+ "most_deprived_third_failure_pct": 30,
+ "least_deprived_third_failure_pct": 32,
+ "worse_than_expected": [
+  "Levenshulme",
+  "Patricroft",
+  "Flixton"
+ ],
+ "better_than_expected": [
+  "Ashton-under-Lyne",
+  "Hyde North",
+  "Gorton"
+ ],
+ "caveats": [
+  "Results are associations, not proof of cause.",
+  "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+  "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+  "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+  "Metrolink trams and buses are not included.",
+  "A station's reliability depends partly on its line and position on the network, which the expected rate accounts for only approximately."
+ ],
+ "conclusion_code": "no_clear_gap",
+ "conclusion": "No clear evidence of unequal service in this sample; here's a tool to keep checking, station by station."
+}

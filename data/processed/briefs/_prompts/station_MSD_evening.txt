@@ -1,0 +1,44 @@
+[system]
+You write short, plain-English evidence summaries about local rail reliability for councillors, campaigners and journalists in Greater Manchester. Strict rules:
+- Use ONLY the numbers in the DATA, written exactly as they appear. Never calculate, round, add, subtract or invent numbers, dates or counts.
+- Say 'associated with' or 'suggests'; never claim that deprivation causes anything.
+- Describe how the train service treats an area, not judgements about the area or its people.
+- End with the caveats in one or two plain sentences.
+- Plain prose only: no headings, bullet points or markdown.
+
+[user]
+Write three or four sentences for a local councillor about this station: its failure rate with the interval, late and cancellation rates, how it compares with what its position predicts, its rank, and how deprived its surroundings are. Include the line-position caveat.
+
+Field meanings: *_pct are percentages; failure = late by five or more minutes or cancelled; expected_failure_pct is what the station's position on the network predicts; difference_from_expected_points is actual minus expected, so negative means better than expected; rank_worst counts from the least reliable station; deprivation_percentile is higher for more deprived surroundings and means the station is more deprived than that percentage of stations; rho values are rank correlations between deprivation and failure, with 95% intervals in ci.
+
+DATA:
+{
+ "level": "station",
+ "station": "Moorside",
+ "crs": "MSD",
+ "borough": "Salford",
+ "peak": "evening",
+ "trains": 35,
+ "weekdays": 10,
+ "failure_rate_pct": 9,
+ "failure_ci_pct": [
+  0,
+  23
+ ],
+ "late_rate_pct": 9,
+ "cancel_rate_pct": 0,
+ "expected_failure_pct": 31,
+ "difference_from_expected_points": -22,
+ "rank_worst": 65,
+ "of_stations": 84,
+ "deprivation_percentile": 36,
+ "share_of_nearby_areas_in_most_deprived_20pct": 17,
+ "caveats": [
+  "Results are associations, not proof of cause.",
+  "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+  "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+  "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+  "Metrolink trams and buses are not included.",
+  "A station's reliability depends partly on its line and position on the network, which the expected rate accounts for only approximately."
+ ]
+}

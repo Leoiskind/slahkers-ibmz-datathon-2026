@@ -1,0 +1,24 @@
+{
+  "level": "borough",
+  "borough": "Manchester",
+  "peak": "evening",
+  "stations": 11,
+  "trains": 692,
+  "failure_rate_pct": 32,
+  "late_rate_pct": 31,
+  "cancel_rate_pct": 1,
+  "greater_manchester_failure_rate_pct": 26,
+  "difference_from_greater_manchester_points": 6,
+  "most_reliable_station": "Belle Vue",
+  "most_reliable_station_failure_pct": 3,
+  "least_reliable_station": "East Didsbury",
+  "least_reliable_station_failure_pct": 49,
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "With few stations per borough there is no separate statistical test for a borough; compare with the Greater Manchester result."
+  ]
+}

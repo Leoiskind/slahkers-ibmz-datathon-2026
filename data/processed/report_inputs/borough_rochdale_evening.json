@@ -1,0 +1,24 @@
+{
+  "level": "borough",
+  "borough": "Rochdale",
+  "peak": "evening",
+  "stations": 5,
+  "trains": 261,
+  "failure_rate_pct": 21,
+  "late_rate_pct": 21,
+  "cancel_rate_pct": 0,
+  "greater_manchester_failure_rate_pct": 26,
+  "difference_from_greater_manchester_points": -5,
+  "most_reliable_station": "Smithy Bridge",
+  "most_reliable_station_failure_pct": 11,
+  "least_reliable_station": "Mills Hill",
+  "least_reliable_station_failure_pct": 41,
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "With few stations per borough there is no separate statistical test for a borough; compare with the Greater Manchester result."
+  ]
+}

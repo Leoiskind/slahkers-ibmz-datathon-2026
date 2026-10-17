@@ -1,0 +1,30 @@
+{
+  "level": "station",
+  "station": "Littleborough",
+  "crs": "LTL",
+  "borough": "Rochdale",
+  "peak": "evening",
+  "trains": 57,
+  "weekdays": 10,
+  "failure_rate_pct": 25,
+  "failure_ci_pct": [
+    16,
+    33
+  ],
+  "late_rate_pct": 25,
+  "cancel_rate_pct": 0,
+  "expected_failure_pct": 36,
+  "difference_from_expected_points": -11,
+  "rank_worst": 44,
+  "of_stations": 84,
+  "deprivation_percentile": 40,
+  "share_of_nearby_areas_in_most_deprived_20pct": 17,
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "A station's reliability depends partly on its line and position on the network, which the expected rate accounts for only approximately."
+  ]
+}

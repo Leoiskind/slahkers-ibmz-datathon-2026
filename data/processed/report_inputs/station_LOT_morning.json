@@ -1,0 +1,30 @@
+{
+  "level": "station",
+  "station": "Lostock",
+  "crs": "LOT",
+  "borough": "Bolton",
+  "peak": "morning",
+  "trains": 60,
+  "weekdays": 10,
+  "failure_rate_pct": 42,
+  "failure_ci_pct": [
+    25,
+    58
+  ],
+  "late_rate_pct": 28,
+  "cancel_rate_pct": 13,
+  "expected_failure_pct": 34,
+  "difference_from_expected_points": 8,
+  "rank_worst": 10,
+  "of_stations": 84,
+  "deprivation_percentile": 11,
+  "share_of_nearby_areas_in_most_deprived_20pct": 0,
+  "caveats": [
+    "Results are associations, not proof of cause.",
+    "Rates cover only trains recorded in National Rail's Historical Service Performance data; trains it did not record are not counted.",
+    "The data covers 10 weekdays (5 to 16 October 2026), so figures can move with more data.",
+    "A train counts as failed if it was 5 or more minutes late or was cancelled.",
+    "Metrolink trams and buses are not included.",
+    "A station's reliability depends partly on its line and position on the network, which the expected rate accounts for only approximately."
+  ]
+}
