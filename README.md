@@ -1,7 +1,75 @@
-# ibmzDatathon
-The repo for the IBM Z Datathon 2026.
+# Transport Inequality Auditor: who does the railway let down?
 
-## Setup
+**The SLahkers · IBM Z Datathon 2026 (University of Manchester hub, 17–18 October 2026) · Wildcard theme, "AI for Good"**
+
+Does the railway serve Greater Manchester's deprived communities worse than its wealthy ones? This project measures how reliably trains get people from every Greater Manchester station into Manchester city centre, compares that with the deprivation of the neighbourhoods around each station, and adjusts for each station's position on the network. IBM Granite then drafts plain-English reports from the computed numbers. It's built for **councillors, campaigners and journalists**.
+
+**Status:** complete for the datathon, and **deployed and run on IBM LinuxONE** (s390x). The full analysis, the IBM Z model run (with the on-chip AI accelerator check and benchmark) and Granite report generation all ran on the LinuxONE Community Cloud VM. The results match a laptop run exactly. The evidence is in [`docs/ibmz_evidence/`](docs/ibmz_evidence/).
+
+## Results (5–16 October 2026, weekdays)
+
+**No clear evidence of unequal service in this sample; here's a tool to keep checking, station by station.**
+
+Main tests, fixed before seeing the data (morning peak, logistic regression, 83 Greater Manchester stations, 5,040 trains):
+
+| Test | Spearman ρ | 95% interval (resampling stations) |
+|---|---|---|
+| Raw: deprivation vs failure rate | −0.12 | −0.35 to +0.12 |
+| Position-adjusted: deprivation vs failure rate beyond what network position predicts | −0.14 | −0.37 to +0.08 |
+
+Both intervals include zero. XGBoost (the robustness check) and the evening peak agree. For communication only: in the morning, 30% of trains failed at the most deprived third of stations and 32% at the least deprived third.
+
+![Deprivation vs morning failure rate](docs/figures/deprivation_vs_failure_morning.png)
+
+**Caveats:** results are associations, not causes. A train *fails* if it is 5+ minutes late or cancelled. Rates cover only trains recorded in National Rail's Historical Service Performance (HSP) data, about 72% of timetabled trains. Trains HSP did not record are left out rather than counted as cancelled, because a Realtime Trains check showed that most of them ran. The data covers 10 weekdays, and 9 October looks like a disruption day. Metrolink trams and buses are excluded. One station (SRN) has no deprivation score.
+
+The per-station table is `data/processed/station_quality.csv`. IBM Granite drafts plain-English reports from these numbers; every draft is human-reviewed before use (see [`docs/ibmz_evidence/granite_area_morning_review.md`](docs/ibmz_evidence/granite_area_morning_review.md)).
+
+## How it works
+
+```
+Network Rail timetable ─┐
+HSP actual train times ─┼─► journeys (one row per train) ─► position model ─► fixed tests ─► evidence pack ─► Granite drafts ─► human review
+IMD 2025 + LSOAs ───────┤        (src/journeys.py)          (src/models.py)                 (src/evidence.py)  (src/brief.py)
+Open-Meteo weather ─────┘
+```
+
+1. **Deprivation per station** (`src/geo.py`): each LSOA (neighbourhood) is matched to its nearest station within 1.5 km. `dep_score` is the mean IMD 2025 deprivation percentile of those LSOAs, where higher means more deprived. As built, this uses 2011 LSOA matches (96% joined to IMD 2025).
+2. **Service quality, hub method** (`src/timetable.py`, `src/journeys.py`):
+   - **Morning:** trains with a scheduled arrival at their first city-centre hub (Piccadilly, Oxford Road, Victoria or Deansgate) between 07:00 and 09:59, measured at the hub.
+   - **Evening:** trains with a scheduled departure from their last hub between 16:00 and 18:59, measured on arrival at the origin.
+   - A train **fails** if it is 5 or more minutes late or cancelled. The main measure is the morning failure rate.
+3. **Position adjustment** (`src/models.py`): this works like expected goals in football. A model predicts each train's chance of failing from its network position only: scheduled minutes to the hub, stops before and between, time of day, rain and wind. It never sees deprivation, the station or the operator. Cross-validation is grouped by station, so each station's expected rate is learned only from other stations. Residual = observed − expected. Logistic regression is the main model, XGBoost the robustness check, and a Keras network the IBM Z accelerator demonstration.
+4. **Fixed tests** (`src/models.py`): Spearman ρ between `dep_score` and (a) the raw failure rate and (b) the position-adjusted residual, each with a 2,000-resample bootstrap over stations. These were fixed before any results were seen, along with the wording for each possible outcome.
+5. **Evidence pack** (`src/evidence.py`): a per-station table with date-bootstrap intervals (`data/processed/station_quality.csv`), the main chart, and JSON report inputs for the area, each borough and each station.
+6. **Granite reports** (`src/brief.py`): IBM Granite 3.3 2B Instruct, running on LinuxONE, turns the precomputed numbers into a short report and never calculates anything itself. An automatic check rejects any number that isn't in the input, and a person reviews every draft before it's used.
+
+## Deployed on IBM LinuxONE
+
+| | What we did on the LinuxONE Community Cloud VM (s390x, big-endian, 3 cores) |
+|---|---|
+| Platform | `uname -m` = `s390x`; `nnpa` present in `/proc/cpuinfo` (IBM Telum on-chip AI accelerator) |
+| Pipeline | geo → weather → journeys → models → evidence ran end to end from the committed CSVs. There's no pyarrow on s390x, so `src/tableio.py` falls back to CSV |
+| Models | `python -m src.models --peak both --profile ibmz`. Logistic regression and XGBoost gave **identical** results to the x86 laptop run |
+| AI accelerator | Keras inference through TensorFlow and IBM's `ibm-zdnn-plugin` 2.3.0: about 125,000 predictions per second (morning) and 104,000 (evening). This is a demonstration only, see the notes |
+| Generative AI | IBM Granite 3.3 2B Instruct (big-endian GGUF) via `llama-cpp-python`, on the VM's CPU cores at about 1 token per second. It generated the Greater Manchester morning report in 735 s; human review caught a reversed comparison, which we corrected ([review](docs/ibmz_evidence/granite_area_morning_review.md)) |
+
+Honest notes: the Keras network's accuracy was no better than chance (AUC ≈ 0.48), so it's **not** used for any result. We report speeds rather than speed-ups, because we didn't measure a CPU-only baseline. Full instructions are under [Running on IBM LinuxONE](#running-on-ibm-linuxone).
+
+## Repo layout
+
+| Path | Contents |
+|---|---|
+| `run_all.py`, `config.yaml` | Runs every stage in order; all settings (stations, hubs, peaks, dates, threshold, Granite model path) |
+| `src/` | The pipeline: `timetable`, `geo`, `weather`, `journeys`, `models`, `evidence`, `brief`, plus `tableio` (parquet/CSV), `config`, `synthetic`, and `rtt` (Realtime Trains validation) |
+| `scripts/` | HSP data extraction and merging (`hsp_extract*.py`, `merge_hsp_csv.py`, `export_from_cache.py`, `cleaner.py`) |
+| `tests/` | `test_models_synthetic.py` (recovers a planted effect), `test_brief.py` (the number check) |
+| `data/` | Raw inputs, cached API responses and processed tables (`.parquet` and `.csv`) |
+| `docs/` | [`ibmz_evidence/`](docs/ibmz_evidence/) (LinuxONE run records), `figures/`, [`notes/`](docs/notes/) (method documents) |
+| `legacy/` | Superseded early code, kept for reference and not used |
+| `CLAUDE.md` | Full project context, decisions and rules for contributors and AI coding assistants |
+
+## Setup (laptop)
 
 You need **Python 3.12** and Git. Use 3.12 specifically: it matches the LinuxONE VM, and the pinned numpy has no prebuilt Windows package for 3.13 or newer (pip then tries to compile it and fails). Having a newer Python installed as well is fine.
 
@@ -128,28 +196,6 @@ python -c "from src.config import hsp_credentials; hsp_credentials(); print('HSP
 - If you add a library, add it to `requirements.txt` with its version and tell the team.
 - Never commit `.venv/`, datasets, models or secrets. They are already covered by `.gitignore`.
 
-### Running on LinuxONE
-
-See **[Running on IBM LinuxONE](#running-on-ibm-linuxone)** below.
-
-## Results (5–16 October 2026, weekdays)
-
-**No clear evidence of unequal service in this sample; here's a tool to keep checking, station by station.**
-
-Main tests, fixed before seeing the data (morning peak, logistic regression, 83 Greater Manchester stations, 5,040 trains):
-
-| Test | Spearman ρ | 95% interval (resampling stations) |
-|---|---|---|
-| Raw: deprivation vs failure rate | −0.12 | −0.35 to +0.12 |
-| Position-adjusted: deprivation vs failure rate beyond what network position predicts | −0.14 | −0.37 to +0.08 |
-
-Both intervals include zero. XGBoost (the robustness check) and the evening peak agree. For communication only: in the morning, 30% of trains failed at the most deprived third of stations and 32% at the least deprived third.
-
-![Deprivation vs morning failure rate](docs/figures/deprivation_vs_failure_morning.png)
-
-**Caveats:** results are associations, not causes. A train *fails* if it is 5+ minutes late or cancelled. Rates cover only trains recorded in National Rail's Historical Service Performance (HSP) data, about 72% of timetabled trains. Trains HSP did not record are left out rather than counted as cancelled, because a Realtime Trains check showed that most of them ran. The data covers 10 weekdays, and 9 October looks like a disruption day. Metrolink trams and buses are excluded. One station (SRN) has no deprivation score.
-
-The per-station table is `data/processed/station_quality.csv`. IBM Granite drafts plain-English reports from these numbers; every draft is human-reviewed before use (see [`docs/ibmz_evidence/granite_area_morning_review.md`](docs/ibmz_evidence/granite_area_morning_review.md)).
 
 ## How to run (laptop)
 
@@ -163,7 +209,7 @@ Tests: `python tests/test_models_synthetic.py` (the pipeline recovers a planted 
 
 ## Running on IBM LinuxONE
 
-This is how we ran the project on the IBM LinuxONE Community Cloud VM (s390x, big-endian, 3 CPU cores, about 4 GB free RAM). Evidence from our run is in [`docs/ibmz_evidence/`](docs/ibmz_evidence/).
+This is how we deployed and ran the project on the IBM LinuxONE Community Cloud VM (s390x, big-endian, 3 CPU cores, about 4 GB free RAM). Evidence from our run is in [`docs/ibmz_evidence/`](docs/ibmz_evidence/).
 
 ### 1. Connect and check the machine
 
@@ -280,3 +326,19 @@ We didn't measure a CPU-only baseline, so we report speeds, not speed-ups.
 ## Libraries
 
 [pandas](https://pandas.pydata.org/) · [NumPy](https://numpy.org/) · [SciPy](https://scipy.org/) · [scikit-learn](https://scikit-learn.org/) · [XGBoost](https://xgboost.ai/) · [TensorFlow / Keras](https://www.tensorflow.org/) with [IBM zDNN plugin](https://pypi.org/project/ibm-zdnn-plugin/) · [matplotlib](https://matplotlib.org/) · [PyArrow](https://arrow.apache.org/docs/python/) (optional) · [PyYAML](https://pyyaml.org/) · [Requests](https://requests.readthedocs.io/) · [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) · [IBM Granite 3.3 2B Instruct](https://huggingface.co/ibm-granite/granite-3.3-2b-instruct) (big-endian GGUF for s390x: [taronaeo/Granite-3.3-2B-Instruct-BE-GGUF](https://huggingface.co/taronaeo/Granite-3.3-2B-Instruct-BE-GGUF))
+
+## Limitations and next steps
+
+**Limitations:**
+- 10 weekdays of data.
+- Only trains recorded in HSP (about 72% of the timetable).
+- Journeys to and from the city centre only.
+- 2011 LSOA matches rather than 2021 population-weighted centroids.
+- Operator and line effects are only approximately controlled for.
+- Results describe stations and areas, not individual passengers.
+
+**Next steps:**
+- A nightly scheduled job on LinuxONE that pulls each day's trains and refreshes the results, building up months of data.
+- An automatic check on Granite's direction words ("higher", "lower").
+- Tune or drop the Keras network, and measure a CPU-only baseline.
+- Extend to other cities (the pipeline is config-driven), Metrolink and buses.

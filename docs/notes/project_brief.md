@@ -7,6 +7,9 @@
 
 > This file gives an AI coding assistant (or a new teammate) the full context for the project. Read all of it before writing code.
 
+
+> **Planning document from the start of the datathon (17 October 2026).** The finished project differs: HSP (not Realtime Trains) was the main data source; all 83 Greater Manchester stations were analysed over 10 weekdays (5–16 October 2026); the result was **no clear evidence of unequal service**; and the pipeline was deployed and run on IBM LinuxONE with Granite 3.3 2B Instruct writing human-reviewed reports. See the main [README](../../README.md) and `CLAUDE.md` for what was built.
+
 ---
 
 ## 1. The idea in one paragraph

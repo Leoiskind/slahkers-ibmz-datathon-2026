@@ -4,6 +4,9 @@
 **Status:** agreed design (17 October 2026). Companion to `deprivation_method.md` and `service_quality_method.md`.
 **Code:** `src/models.py` · smoke test: `tests/test_models_synthetic.py`
 
+
+> **As built and deployed:** implemented in `src/models.py` and run on both a laptop (x86) and **IBM LinuxONE** (s390x) with identical logistic-regression and XGBoost results: morning raw ρ −0.12 [−0.35, +0.12], adjusted ρ −0.14 [−0.37, +0.08], 83 stations, 5,040 trains. Peaks are named `morning`/`evening`. On LinuxONE the Keras network ran inference through the zDNN plugin (about 125,000 predictions per second) but its AUC was about 0.48, so it is a demonstration only. Tables are read via `src/tableio.py` (CSV fallback, because there's no pyarrow on s390x), not `pd.read_parquet`. Records: `docs/ibmz_evidence/`.
+
 ---
 
 ## 1. What the model is for

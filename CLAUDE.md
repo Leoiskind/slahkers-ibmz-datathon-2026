@@ -2,17 +2,15 @@
 
 > Context for Claude Code and teammates. Read all of it before writing code or giving advice.
 > Detailed method documents live in `docs/`; this file is the summary and the rules.
-> Last updated: 17 October 2026, 17:15.
+> Last updated: 18 October 2026, after the datathon. **The project is complete and deployed on IBM LinuxONE.** Sections 3–9 describe what was built; the planning documents in `docs/notes/` record the original design.
 
 ---
 
 ## 1. Event and goal
 
 - **Event:** IBM Z Datathon 2026 (Shooting Stars Foundation with IBM), University of Manchester hub. **Team:** The SLahkers. **Theme:** Wildcard (Beyond the Obvious), under "AI for Good".
-- **Hacking window:** 09:00 17 October to about 10:00 18 October (UK). **Our deadline: everything submitted tonight, 17 October.**
-  - **Feature freeze 20:30.** After that: results, README, video and submission only.
-  - **Video work starts by 21:00.**
-- **Submission (Hack2Skill):** video of 3 minutes or less (problem → supporting data → solution and demo → **how it uses IBM Z**: tech stack, LinuxONE instance, model running → impact), GitHub repo link, title `[The SLahkers_IBM Z Datathon 2026 Project]`, links to every open-source library and dataset. Optional: architecture flowchart, prototype.
+- **Hacking window:** 09:00 17 October to about 10:00 18 October (UK). **Finished:** the pipeline was built, deployed and run on LinuxONE, and the video and submission were completed during the event.
+- **Submission (Hack2Skill, done):** video of 3 minutes or less (problem → supporting data → solution and demo → **how it uses IBM Z**: tech stack, LinuxONE instance, model running → impact), GitHub repo link, title `[The SLahkers_IBM Z Datathon 2026 Project]`, links to every open-source library and dataset. Optional: architecture flowchart, prototype.
 - **Judging (10 points each):** community value and theme fit · novelty · **technical design and use of LinuxONE and AI/ML** (screenshots as evidence) · execution and pitch.
 - **Rules:** all code written during the event; don't copy IBM lab code or other projects; link every library and dataset; check with the organisers (Discord `#ibm-z-sme-helpdesk`) what's allowed for AI-assisted code.
 
@@ -44,7 +42,8 @@
 
 ## 3. Methods (summary; details in `docs/`)
 
-### 3.1 Deprivation per station → `docs/deprivation_method.md`
+### 3.1 Deprivation per station → `docs/notes/deprivation_method.md`
+- **As built (`src/geo.py`):** 2011 LSOA nearest-station matches within 1.5 km (`data/processed/lsoa_station_matches.csv`), joined to IMD 2025 (96% of LSOAs join). Every Greater Manchester station is scored (83 in the analysis; SRN has no score). The planned design follows.
 - Unit: **LSOA (2021)**. No postcodes and no postcodes.io.
 - Each LSOA's **population-weighted centroid** is assigned to its **nearest station among ALL Greater Manchester stations** (plus a ~3 km buffer and the hubs). Kept if that station is sampled and within **1.5 km**. No double counting.
 - `deprivation_pct = 1 − imd_rank / max_rank` (**higher = more deprived**; read `max_rank` from the file).
@@ -52,7 +51,7 @@
 - Avoid the "Barriers to Housing and Services" domain (circular with transport access).
 - Sensitivity checks: radius 1 km and 2 km, population weighting, own LSOA, overlapping circles.
 
-### 3.2 Service quality per station: hub method → `docs/service_quality_method.md`
+### 3.2 Service quality per station: hub method → `docs/notes/service_quality_method.md`
 - **Hubs:** MAN (Piccadilly), MCO (Oxford Road), MCV (Victoria), DGT (Deansgate). Never sampled as origins.
 - Hub decided **per train**: morning = **first** hub after the origin; evening = **last** hub before the origin. Trains reaching no hub are excluded.
 - **Morning:** scheduled **arrival at the first hub 07:00–09:59**; lateness measured **at the hub**.
@@ -64,7 +63,7 @@
 - 10 minutes is a sensitivity check only.
 - **HSP data (agreed 17 Oct, `src/journeys.py`):** an HSP-recorded train with no actual time at the measuring stop is `cancelled` if it has a `late_canc_reason` or no actuals anywhere; otherwise `missing`. Trains **absent** from HSP are not counted: HSP omits many runs that did run (RTT check, 5 Oct: 37 of 38 absent trains ran; HSP holds ~72% of timetabled trains). All rates are "among trains HSP recorded". Coverage is not clearly related to deprivation (`hsp_coverage.parquet`).
 
-### 3.3 Model: risk adjustment → `docs/model_method.md`, code in `src/models.py`
+### 3.3 Model: risk adjustment → `docs/notes/model_method.md`, code in `src/models.py`
 - **Purpose:** expected failure rate given **position only** (like expected goals in football). Residual = observed − expected.
 - **Rows:** one per train (station × day × peak). **Target:** `failed` = late ≥ 5 or cancelled.
 - **Features:** `minutes_to_hub` (scheduled), `stops_between`, `stops_before`, `sched_hour`, `rain_mm`, `wind_kmh`.
@@ -81,33 +80,26 @@
 - Communication only: compare the most and least deprived thirds of stations (not an extra test).
 - Everything else is supporting or sensitivity.
 
-### 3.5 Station sample
-- Compute `dep_score` for **every** Greater Manchester station first (no API calls).
-- Choose **20–30 origins** across deprivation fifths and lines (north, south, east, west), including matched pairs (similar journey time, different deprivation).
-- `possible_hubs` per origin filled from **real timetable data**, not memory.
+### 3.5 Stations analysed
+- **As built:** all Greater Manchester stations with HSP-recorded peak trains to or from a hub (83 in the morning analysis, 5,040 morning trains, 5–16 October 2026). This replaces the planned sample of 20–30.
+- `possible_hubs` and stopping patterns come from the real Network Rail timetable (`src/timetable.py`).
 
 ---
 
-## 4. Data sources
+## 4. Data sources (as used)
 
-| Source | Access | Used for | Status |
-|---|---|---|---|
-| **Realtime Trains API (Next Generation)** | Base `https://data.rtt.io`, bearer token from https://api-portal.rtt.io/. Spec: https://realtimetrains.github.io/api-specification/specification/main.yml. **The legacy api.rtt.io is shut down.** | Train times, lateness, cancellations | **Expected main source.** Check access. |
-| **HSP** (National Rail, via https://raildata.org.uk/) | Subscription; docs https://wiki.openraildata.com/index.php?title=HSP | Longer history, if credentials arrive | No credentials yet |
-| **NaPTAN** | https://ckan.publishing.service.gov.uk/dataset/national-public-transport-access-nodes-naptan8 | Station coordinates and CRS codes | To download |
-| **LSOA 2021 population-weighted centroids** | ONS Open Geography Portal (https://geoportal.statistics.gov.uk/) | Catchments | To download |
-| **IMD 2025** | https://deprivation.communities.gov.uk/download-all | Deprivation | Postcode-level file in hand → deduplicate to one row per LSOA, or download the LSOA file |
-| **Open-Meteo historical** | https://open-meteo.com/en/docs/historical-weather-api (no key) | Weather feature | Tested |
-| *(optional)* Census 2021 TS001 / TS045 | ONS | Population weighting / % no car | Not started |
-| *(optional)* ORR station usage | https://dataportal.orr.gov.uk/station-usage | Impact weighting | Not started |
-| **Maven "UK Train Rides"** | Maven data playground | **MOCK ONLY**, for pipeline testing; `source=mock`; never presented as results | Not on machine |
+| Source | Used for | Code |
+|---|---|---|
+| **National Rail HSP** via https://raildata.org.uk/ (docs https://wiki.openraildata.com/index.php?title=HSP) | Actual times, lateness and cancellations, 5–16 Oct 2026 (**main source**) | `scripts/hsp_extract*.py`, `scripts/merge_hsp_csv.py`, `src/journeys.py` |
+| **Network Rail SCHEDULE feed** (https://wiki.openraildata.com/index.php/SCHEDULE) | Planned timetable, stopping patterns, HSP coverage | `src/timetable.py` |
+| **IMD 2025** (https://deprivation.communities.gov.uk/download-all) | Deprivation per LSOA | `src/geo.py`, `src/prep_deprivation.py` |
+| **ONS LSOA centroids** (https://geoportal.statistics.gov.uk/) | LSOA → nearest station within 1.5 km | `data/processed/lsoa_station_matches.csv` |
+| **Open-Meteo historical** (https://open-meteo.com/en/docs/historical-weather-api, no key) | Hourly rain and wind per station | `src/weather.py` |
+| **Realtime Trains API (Next Generation)**, `https://data.rtt.io`, token from https://api-portal.rtt.io/ | **Validation only**: checked HSP for 5 Oct (37 of 38 trains absent from HSP actually ran) | `src/rtt.py` |
 
-**Realtime Trains details (verify every field on a real response before parsing):**
-- Endpoints: `/api/info` (check `historyRestrictToDays`, default 14), `/gb-nr/location` (`code`, `filterFrom`, `filterTo`, `timeFrom`, `timeTo`, max 23 h 59 min window), `/gb-nr/service` (`identity` + `departureDate`).
-- Fields: `scheduleAdvertised`, `realtimeActual`, `realtimeAdvertisedLateness`, `isCancelled`, `cancellationReasonCode`, `reasons`.
-- Limits: published defaults are 30/minute, 750/hour, 9,000/day, but **our account is limited to 10/minute, 100/hour, 1,000/day**. **Never put the token in a web page or the repo.**
-- **Morning:** query each possible hub with `filterFrom=<origin>`; keep each train's earliest hub arrival. **Evening:** hub with `filterTo=<origin>`, plus origin with `filterFrom=<hub>`, matched on train identity. About 3 requests per origin per day.
-- Scheduled times and stopping patterns repeat on weekdays: fetch `/gb-nr/service` for **one day per regular train** and reuse for `minutes_to_hub`, `stops_between` and `stops_before`.
+**Realtime Trains notes:** the legacy api.rtt.io is shut down. Our account is limited to 10 requests per minute, 100 per hour and 1,000 per day. **Never put the token in a web page or the repo.**
+
+Not used: NaPTAN (the timetable's TIPLOC/CRS data was enough), Census population weighting, ORR station usage, Maven mock data (synthetic tests use `src/synthetic.py`, `source=mock`).
 
 ---
 
@@ -118,38 +110,38 @@ Each stage reads the previous stage's file via `src/tableio.py` (`read_table`/`w
 | Stage | Module | Output | Key columns |
 |---|---|---|---|
 | Config | `config.yaml`, `src/config.py` | — | stations, `possible_hubs`, peaks, dates, threshold, `primary_measure`, deprivation settings |
-| Stations | `src/geo.py` | `data/processed/stations.parquet` | `station_crs, name, lat, lon, sampled, is_hub` |
-| Catchments | `src/geo.py` | `data/processed/lsoa_station_assignment.parquet` | `lsoa_code, station_crs, distance_m` |
-| Deprivation | `src/geo.py` | `data/processed/station_deprivation.parquet` | `station_crs, dep_score, dep_share_top20, dep_median, n_lsoa, …` |
-| Trains | `src/rtt.py` / `src/hsp.py` / Maven adapter | `data/processed/journeys.parquet` | `source, station_crs, hub_crs, peak, service_date, train_id, operator, sched_time, actual_time, lateness_min, outcome, failed, cancel_reason, minutes_to_hub, stops_between, stops_before, planned_cancel_flag` |
-| Weather | `src/weather.py` | joined onto journeys | `rain_mm, wind_kmh` (location and hours to be decided) |
-| Quality | `src/metrics.py` | `data/processed/station_quality.parquet` | per station × peak measures + intervals |
+| Timetable | `src/timetable.py` | `data/processed/timetable_trains.parquet` | one row per planned train × day × peak × GM origin, stopping-pattern features |
+| Deprivation | `src/geo.py` | `data/processed/station_deprivation.parquet` | `station_crs, dep_score, n_lsoa, …` |
+| Weather | `src/weather.py` | `data/processed/weather_hourly.parquet` | `station_crs, ts, rain_mm, wind_kmh` |
+| Trains | `src/journeys.py` (from the HSP extract `data/processed/train_data.csv`) | `data/processed/journeys.parquet`, `hsp_coverage.parquet` | `station_crs, hub_crs, peak, service_date, outcome, failed, lateness_min, minutes_to_hub, stops_between, stops_before, rain_mm, wind_kmh, …` |
 | Models and tests | `src/models.py` | `models/<version>/<platform>/<peak>/…` | `metadata.json`, `oof_predictions.csv`, `station_residuals_<model>.csv`, model files |
-| Briefs | `src/brief.py` | `data/processed/briefs/<station_crs>.md` | Granite text + the numbers it was given |
+| Evidence pack | `src/evidence.py` | `data/processed/station_quality.{parquet,csv}`, `report_inputs/*.json`, `docs/figures/deprivation_vs_failure_morning.png` | per station × peak measures + date-bootstrap intervals |
+| Briefs | `src/brief.py` | `data/processed/briefs/<level>/<name>.md` (area / borough / station) | Granite text + the numbers it was given |
 | Orchestration | `run_all.py` | — | runs every stage in order |
 
 ---
 
-## 6. Platform: IBM LinuxONE
+## 6. Platform: IBM LinuxONE (deployed)
 
-- **VM:** LinuxONE Community Cloud (event code `SSF2026`), **s390x, big-endian**, Ubuntu with Python 3.12 but **no pip on the host**. Use IBM's container.
-- **Container:** `registry.linuxone.cloud.marist.edu/l1cc/jupyterlab-image-s390x:latest`, Docker on port 38888, `~/shared` ↔ `/home/jovyan/shared`. Repo cloned at `~/shared/slahkers-ibmz-datathon-2026`. Install extras in a notebook with `!{sys.executable} -m pip install <pkg>`.
-- **Preinstalled:** pandas 3.x, numpy, scipy, scikit-learn, XGBoost, TensorFlow 2.18.1 with **`ibm-zdnn-plugin`**, and `llama-cpp-python` (zDNN build) with **Granite 3.3 2B Instruct** (big-endian GGUF, as used by the Loan Approval lab).
-- **Accelerator:** the NNPA on-chip AI accelerator; the TensorFlow plugin routes supported ops automatically. **Check `grep -o nnpa /proc/cpuinfo` before claiming acceleration.**
-- **Deployment profiles** (`ModelConfig(profile=...)`): `local` for laptops and servers; `ibmz` for the official run (adds the NNPA check, zDNN version and benchmark). Outputs are versioned per platform: `models/<version>/<platform>/<peak>/`.
-- **Retrain on each platform; don't copy binary model files between architectures.** Prefer text formats (XGBoost JSON).
-- **Only one teammate runs the service on the VM.** Everyone else pushes to GitHub and the VM pulls.
-- **Screenshot as you go:** `uname -m` (s390x), the `nnpa` check, `docker ps`, Jupyter on the VM, the Keras benchmark, Granite generating a brief on the VM.
+- **VM:** LinuxONE Community Cloud (event code `SSF2026`), **s390x, big-endian**, 3 CPU cores, about 4 GB free RAM. We ran in the IBM-provided Python environment (venv), which already has pandas, scikit-learn, XGBoost, TensorFlow with **`ibm-zdnn-plugin` 2.3.0**, and `llama-cpp-python`. IBM's Jupyter Lab container (`registry.linuxone.cloud.marist.edu/l1cc/jupyterlab-image-s390x`) works too.
+- **No pyarrow on s390x:** `src/tableio.py` reads the committed CSV copies.
+- **Accelerator:** the NNPA on-chip AI accelerator (`grep -o nnpa /proc/cpuinfo` → `nnpa`). TensorFlow's zDNN plugin routes supported ops to it. We only used it for the Keras inference benchmark.
+- **Granite:** the VM ships only a 350M *base* model (`granite-4.0-h-350m-base-be.f16.gguf`), which doesn't follow instructions. We used **Granite 3.3 2B Instruct, big-endian GGUF** (`taronaeo/Granite-3.3-2B-Instruct-BE-GGUF`, Q4_K_M) in `/home/ibm-user/`, set in `config.yaml` on the VM only (never committed).
+- **Profiles** (`--profile`): `local` for laptops; `ibmz` adds Keras, the NNPA check, the zDNN version and a benchmark. Outputs are versioned per platform: `models/<version>/<platform>/<peak>/`.
+- **Retrain on each platform; don't copy binary model files between architectures.**
+- **Only one teammate runs the VM.** Everyone else pushes to GitHub and the VM pulls (`git stash && git pull && git stash pop` keeps the local `model_path`).
+- Step-by-step instructions: README → "Running on IBM LinuxONE". Run records: `docs/ibmz_evidence/`.
 
 ---
 
-## 7. Granite briefs
+## 7. Granite reports
 
-- Runs on the VM via `llama-cpp-python`. Load the model the way the container's setup does, but **write our own code**.
-- **Input:** a small JSON of precomputed numbers per station (dep percentile, `dep_share_top20`, failure, late and cancellation rates with intervals, residual, rank among stations, `n_scheduled`, caveats).
-- **Prompt rules:** 3–4 sentences for a councillor; include the line-position caveat; "do not add any numbers not in the input"; temperature 0.
-- **Automatic check:** every number in the output must appear in the input; otherwise flag or regenerate.
-- **Human review** before any brief appears in the video.
+- Runs on the VM via `llama-cpp-python` with our own code (`src/brief.py`); nothing is copied from IBM's labs.
+- **Input:** JSON of precomputed numbers from `src/evidence.py` (area, borough or station), including caveats. Granite never calculates.
+- **Generation:** chat completion at temperature 0, falling back to plain completion. Reports under 15 words are rejected.
+- **Automatic check:** every number in the output must appear in the input; failures are regenerated once, then saved with `needs_review: true`.
+- **Speed:** about 1 token per second on 3 cores, so about 12 minutes per report. Generate only what's needed; all ~188 reports would take more than a day.
+- **Human review is mandatory.** The area morning report passed the number check but called 30% "higher than" 32%. See `docs/ibmz_evidence/granite_area_morning_review.md`.
 
 ---
 
@@ -175,39 +167,37 @@ Each stage reads the previous stage's file via `src/tableio.py` (`read_table`/`w
 
 ---
 
-## 9. Status (18 October, 01:30)
+## 9. Final status (18 October 2026)
 
 | Part | Status |
 |---|---|
-| Timetable, deprivation (2011 LSOA nearest-station × IMD 2025), weather, HSP journeys (5–16 Oct) | ✅ Done |
-| Models + main tests (logreg primary, XGBoost check, Keras demo) | ✅ Done on laptop **and** LinuxONE; results identical |
-| Result | **No clear gap**: morning raw ρ −0.12 [−0.35, +0.12], adjusted ρ −0.14 [−0.37, +0.08] |
-| IBM Z evidence | ✅ s390x, NNPA present, zDNN 2.3.0, Keras inference ~125k rows/s (`docs/ibmz_evidence/`) |
+| Timetable, deprivation, weather, HSP journeys (5–16 Oct) | ✅ Done |
+| Models + main tests (logreg primary, XGBoost check, Keras demo) | ✅ Done on the laptop **and** on LinuxONE; results identical |
+| Result | **No clear gap**: morning raw ρ −0.12 [−0.35, +0.12], adjusted ρ −0.14 [−0.37, +0.08]; 83 stations, 5,040 trains; most vs least deprived third 30% vs 32% failed |
+| IBM Z deployment | ✅ s390x, NNPA present, zDNN 2.3.0, Keras inference ~125k rows/s (morning), ~104k (evening) |
 | Keras accuracy | ❌ AUC ≈ 0.48: demo only, never used for results |
-| Granite 3.3 2B Instruct (big-endian) | ✅ runs on the VM, ~12 min/report; **drafts need human correction** (it reversed a comparison) |
-| CSV fallback for s390x (no pyarrow) | ✅ `src/tableio.py` |
-| ⚠️ Security | HSP credentials were committed in `api_requester_temp` (commits 047dd92, 555354e). **Rotate the password**; history not rewritten |
+| Granite 3.3 2B Instruct (big-endian) | ✅ Area morning report generated on LinuxONE (735 s) and human-corrected |
+| Video and Hack2Skill submission | ✅ Done |
+| ⚠️ Security | HSP credentials were committed in `api_requester_temp` (commits 047dd92, 555354e). The password must be rotated; history was not rewritten |
 
 ---
 
-## 10. Open decisions (settle quickly)
+## 10. Decisions taken
 
-1. **IBM Z story:** recommended framing is a **continuously updating auditor**: a nightly scheduled job on the VM pulls the previous day's trains and refreshes the results, plus secure public-sector analytics, scale and accelerated AI on the platform.
-2. **Coverage measure (recommended, cheap):** the share of residents in the most deprived vs least deprived LSOAs living more than 1.5 km from any station. It addresses the blind spot that areas with no station are invisible to the main analysis.
-3. **Ethics:** frame results as how *the service* treats areas, not judgements on the areas; decide whether to name operators; confirm data licences allow public display and publishing derived tables.
-4. **Weather:** one location for Greater Manchester or per station; which hours.
-5. **Optional Granite Q&A** over the results (good demo moment).
-6. **Project name and one-sentence pitch.**
+1. **IBM Z story:** a continuously updating auditor. The whole pipeline runs on LinuxONE, and Granite writes reports on the same machine, so the data never leaves it. The nightly job is future work.
+2. **Ethics:** results describe how *the service* treats areas, not the areas themselves; language is always correlational; Granite text is always human-reviewed.
+3. **Weather:** per station, by the hour of the scheduled time at that station.
+4. **Not done:** the coverage measure (residents more than 1.5 km from any station), Granite Q&A, and the sensitivity checks (1 km and 2 km radius, 10-minute threshold).
 
 ---
 
-## 11. Next steps (priority order)
+## 11. Future work
 
-1. Rotate the leaked HSP password; update `.env` files.
-2. Review the GTO Granite report (as for the area report); paste `granite.log` into `docs/ibmz_evidence/`.
-3. Screenshots into `docs/ibmz_evidence/`.
-4. Video (≤ 3 min) and Hack2Skill submission before the 10:00 close.
-5. Later: automatic direction check for Granite text; tune or drop Keras; 2021 population-weighted centroids; more weekdays via a nightly LinuxONE job.
+1. Rotate the leaked HSP password, if not already done.
+2. A nightly LinuxONE scheduled job that adds each day's trains and refreshes the results.
+3. An automatic direction-word check for Granite reports, and a larger instruct model.
+4. Tune or drop the Keras network, and measure a CPU-only baseline before claiming any speed-up.
+5. 2021 population-weighted centroids, the sensitivity checks, and other cities.
 
 ---
 

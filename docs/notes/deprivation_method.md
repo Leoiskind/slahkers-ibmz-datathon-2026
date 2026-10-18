@@ -4,6 +4,9 @@
 **Status:** agreed method. It replaces the earlier grid-sampling / postcodes.io approach.
 **Purpose:** give each sampled station one deprivation score that represents the people living around it, to be compared with that station's rail service quality.
 
+
+> **As built:** `src/geo.py` uses **2011 LSOA nearest-station matches** within 1.5 km (`data/processed/lsoa_station_matches.csv`) joined to IMD 2025 (96% join), not 2021 population-weighted centroids. **All 83 Greater Manchester stations** in the HSP data are scored rather than a sample. The sensitivity checks (1 km and 2 km radius, population weighting) were not run.
+
 ---
 
 ## 1. Summary

@@ -4,6 +4,9 @@
 **Status:** agreed method (17 October 2026). Companion to `deprivation_method.md`.
 **Purpose:** give each sampled Greater Manchester station a measure of how reliably the railway serves its passengers, to compare against the deprivation of the area around it.
 
+
+> **As built:** the data came from **National Rail HSP** (5–16 October 2026), not Realtime Trains; RTT was used only to validate it. HSP omits about 28% of timetabled trains. Trains it didn't record are left out (an RTT check showed most of them ran), and cancellations are inferred from `late_canc_reason` or a lack of actual times (`src/journeys.py`). All Greater Manchester stations were analysed, not 20–30. The position model is **logistic regression with cross-validation grouped by station** (see `model_method.md`), not XGBoost with a date split. Per-station measures and intervals are computed in `src/evidence.py`.
+
 ---
 
 ## 1. Summary
