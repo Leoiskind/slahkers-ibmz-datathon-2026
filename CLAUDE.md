@@ -156,47 +156,37 @@ Each stage reads the previous stage's file via `src/tableio.py` (`read_table`/`w
 ## 8. Repo layout
 
 ```
-├── CLAUDE.md
-├── README.md               # setup, how to run, method summary, fixed main tests, all data + library links, attribution
-├── requirements.txt        # pinned to the container's versions, Python 3.12
-├── config.yaml
-├── .env.example            # RTT/HSP token placeholders; real .env is gitignored
-├── run_all.py
+├── CLAUDE.md  README.md  config.yaml  requirements.txt  run_all.py
+├── .env.example            # RTT/HSP placeholders; real .env is gitignored
+├── src/                    # pipeline (all used by run_all.py)
+│   ├── config.py  tableio.py (parquet/CSV I/O)  timetable.py  geo.py  prep_deprivation.py
+│   ├── weather.py  journeys.py  models.py  synthetic.py  evidence.py  brief.py  rtt.py (validation)
+├── scripts/                # HSP extraction: hsp_extract.py, hsp_extract_fast.py, export_from_cache.py, merge_hsp_csv.py, cleaner.py
+├── tests/                  # test_models_synthetic.py, test_brief.py
 ├── docs/
-│   ├── deprivation_method.md
-│   ├── service_quality_method.md
-│   └── model_method.md
-├── src/
-│   ├── __init__.py
-│   ├── config.py  geo.py  rtt.py  hsp.py  weather.py  metrics.py  models.py  brief.py
-├── tests/
-│   └── test_models_synthetic.py
-├── notebooks/              # NN_<task>_<name>.ipynb, one owner each, outputs stripped (nbstripout)
-├── scripts/                # one-off helpers (filter_csv.py, hsp_request_example.py)
-├── docs/notes/             # early briefs and team notes
-├── data/                   # raw/, processed/, cache/ (committed for now)
+│   ├── ibmz_evidence/      # LinuxONE run: metadata, Granite log, human review
+│   ├── figures/            # charts
+│   └── notes/              # planning documents (may differ from what was built)
+├── legacy/                 # superseded code, not imported anywhere
+├── notebooks/
+├── data/                   # raw/, processed/ (.parquet + .csv), cache/, used_for_processing/ (committed)
 └── models/                 # gitignored
 ```
 
-Local setup: **Python 3.12** venv (`py -3.12 -m venv .venv`), then `pip install -r requirements.txt`.
-
 ---
 
-## 9. Status
+## 9. Status (18 October, 01:30)
 
 | Part | Status |
 |---|---|
-| Timetable (`src/timetable.py`) | Network Rail SCHEDULE extract → every GM peak journey (18 May – 16 Oct); matches RTT on 121/125 trains |
-| Deprivation (`src/geo.py`) | `build_station_deprivation`: LSOA nearest-station (Cam's matches) × IMD 2025 → 90 stations |
-| Weather (`src/weather.py`) | Hourly rain/wind per GM station (Open-Meteo), joined by station + scheduled hour |
-| Real trains (`src/journeys.py`) | HSP 5–16 Oct → `journeys.parquet`: 9,359 trains, 84 stations, both peaks |
-| config, schema, metrics | Older code built and tested on **synthetic** data |
-| `src/hsp.py` | Fetch and cache only; no credentials |
-| `src/models.py` + `tests/test_models_synthetic.py` | logreg + XGBoost run on synthetic (planted effect recovered) and on real HSP data. **Keras path not yet executed**: run in the IBM container. |
-| RTT adapter (`src/rtt.py`) | Written and verified; pull stopped (account limits 10/min, 100/h, 1000/day). Partial cache used for validation only |
-| Station list and sample, `possible_hubs` | Not started |
-| Briefs (`src/brief.py`), `run_all.py` | Not started |
-| Real train data | HSP 5–16 Oct (see `src/journeys.py` for the cancellation rule) |
+| Timetable, deprivation (2011 LSOA nearest-station × IMD 2025), weather, HSP journeys (5–16 Oct) | ✅ Done |
+| Models + main tests (logreg primary, XGBoost check, Keras demo) | ✅ Done on laptop **and** LinuxONE; results identical |
+| Result | **No clear gap**: morning raw ρ −0.12 [−0.35, +0.12], adjusted ρ −0.14 [−0.37, +0.08] |
+| IBM Z evidence | ✅ s390x, NNPA present, zDNN 2.3.0, Keras inference ~125k rows/s (`docs/ibmz_evidence/`) |
+| Keras accuracy | ❌ AUC ≈ 0.48: demo only, never used for results |
+| Granite 3.3 2B Instruct (big-endian) | ✅ runs on the VM, ~12 min/report; **drafts need human correction** (it reversed a comparison) |
+| CSV fallback for s390x (no pyarrow) | ✅ `src/tableio.py` |
+| ⚠️ Security | HSP credentials were committed in `api_requester_temp` (commits 047dd92, 555354e). **Rotate the password**; history not rewritten |
 
 ---
 
@@ -213,13 +203,11 @@ Local setup: **Python 3.12** venv (`py -3.12 -m venv .venv`), then `pip install 
 
 ## 11. Next steps (priority order)
 
-1. **Confirm train data access** (Realtime Trains token; check `/api/info`).
-2. **Stations:** NaPTAN → all Greater Manchester stations (+ buffer, hubs) → rework `src/geo.py` → `dep_score` for all stations → choose the 20–30 sample → fill `possible_hubs`.
-3. **One test API call** (one origin, one hub, one day). Save the raw JSON; write `src/rtt.py` against it; check skipped stops, cancellations, multi-hub trains and time formats by hand.
-4. **Background pull** on the VM (cached, rate-limited).
-5. **Meanwhile:** run `tests/test_models_synthetic.py` in the IBM container; NNPA check and Keras benchmark; Granite prompt with placeholder numbers.
-6. Metrics → models → main tests → briefs → charts (`run_all.py`).
-7. **20:30 feature freeze** → README, screenshots, video (from 21:00), submission.
+1. Rotate the leaked HSP password; update `.env` files.
+2. Review the GTO Granite report (as for the area report); paste `granite.log` into `docs/ibmz_evidence/`.
+3. Screenshots into `docs/ibmz_evidence/`.
+4. Video (≤ 3 min) and Hack2Skill submission before the 10:00 close.
+5. Later: automatic direction check for Granite text; tune or drop Keras; 2021 population-weighted centroids; more weekdays via a nightly LinuxONE job.
 
 ---
 
