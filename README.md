@@ -288,10 +288,6 @@ Don't run `python run_all.py --profile ibmz` with `granite.model_path` set unles
 
 **Human review is required.** The automatic check confirms every number came from the data, but not that the sentences are right. In our run Granite called 30% "higher than" 32%. Read every report in `data/processed/briefs/` and correct it before use.
 
-### 7. Copy the evidence off the VM
-
-`models/` is gitignored. Copy `models/<version>/ibmz/*/metadata.json` and `granite.log` into `docs/ibmz_evidence/` and commit them (`scp` from your laptop, Jupyter's file browser → Download, or `cat` and paste).
-
 ### What ran where on LinuxONE
 
 | Part | Hardware |
