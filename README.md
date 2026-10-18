@@ -34,8 +34,8 @@ Or download the 3.12.x installer from https://www.python.org/downloads/.
 ### 2. Clone the repo
 
 ```bash
-git clone https://github.com/Leoiskind/IBM-Z-Datathon-SLahkers.git
-cd IBM-Z-Datathon-SLahkers
+git clone https://github.com/Leoiskind/slahkers-ibmz-datathon-2026.git
+cd slahkers-ibmz-datathon-2026
 ```
 
 ### 3. Create the virtual environment
@@ -130,7 +130,7 @@ python -c "from src.config import hsp_credentials; hsp_credentials(); print('HSP
 
 ### Running on LinuxONE
 
-The final solution runs on the IBM LinuxONE Community Cloud, inside IBM's s390x Jupyter Lab container, which already includes these libraries. `requirements.txt` mirrors that container's versions so code behaves the same locally and on the VM. Heavy packages such as TensorFlow and PyTorch are optional locally (see comments in `requirements.txt`).
+See **[Running on IBM LinuxONE](#running-on-ibm-linuxone)** below.
 
 ## Results (5–16 October 2026, weekdays)
 
@@ -149,23 +149,122 @@ Both intervals include zero. XGBoost (the robustness check) and the evening peak
 
 **Caveats:** results are associations, not causes. A train *fails* if it is 5+ minutes late or cancelled. Rates cover only trains recorded in National Rail's Historical Service Performance (HSP) data, about 72% of timetabled trains. Trains HSP did not record are left out rather than counted as cancelled, because a Realtime Trains check showed that most of them ran. The data covers 10 weekdays, and 9 October looks like a disruption day. Metrolink trams and buses are excluded. One station (SRN) has no deprivation score.
 
-The per-station table is `data/processed/station_quality.csv`. Each station also gets a Granite-written brief (see below).
+The per-station table is `data/processed/station_quality.csv`. IBM Granite drafts plain-English reports from these numbers; every draft is human-reviewed before use (see [`docs/ibmz_evidence/granite_area_morning_review.md`](docs/ibmz_evidence/granite_area_morning_review.md)).
 
-## How to run
+## How to run (laptop)
 
 ```bash
 python run_all.py
 ```
 
-This runs geo → weather → journeys → models → evidence → briefs, with every stage cached. On the LinuxONE VM, inside the IBM container, set `granite.model_path` in `config.yaml`, then:
-
-```bash
-python run_all.py --profile ibmz
-```
-
-That adds the Keras model, the NNPA accelerator check and an inference benchmark (in `models/<version>/ibmz/*/metadata.json`), and generates the IBM Granite reports in `data/processed/briefs/` (Greater Manchester, each borough, each station). Granite only rewrites numbers computed in Python; any report containing a number that isn't in its input is flagged `needs_review`. Read every report before using it.
+This runs geo → weather → journeys → models → evidence → briefs, with every stage cached. On a laptop the briefs stage only writes the prompts (dry run) unless `granite.model_path` is set.
 
 Tests: `python tests/test_models_synthetic.py` (the pipeline recovers a planted effect on synthetic outcomes) and `python tests/test_brief.py` (the number check).
+
+## Running on IBM LinuxONE
+
+This is how we ran the project on the IBM LinuxONE Community Cloud VM (s390x, big-endian, 3 CPU cores, about 4 GB free RAM). Evidence from our run is in [`docs/ibmz_evidence/`](docs/ibmz_evidence/).
+
+### 1. Connect and check the machine
+
+```bash
+ssh -i <your-key> ibm-user@<VM-IP>
+uname -m                              # s390x
+grep -o nnpa /proc/cpuinfo | head -1  # nnpa = the on-chip AI accelerator is available
+```
+
+### 2. Get the code
+
+```bash
+cd ~/shared
+git clone https://github.com/Leoiskind/slahkers-ibmz-datathon-2026.git   # first time only
+cd slahkers-ibmz-datathon-2026
+git pull
+```
+
+Run every project command from this folder.
+
+### 3. Use the IBM-provided Python environment
+
+Use the Python environment that comes with the VM (the `venv`, or IBM's Jupyter Lab container). It already has TensorFlow with IBM's `ibm-zdnn-plugin`, XGBoost, scikit-learn and `llama-cpp-python`. Check:
+
+```bash
+python -c "import pandas, sklearn, scipy, joblib, yaml, xgboost, tensorflow as tf, llama_cpp; print('ok', tf.__version__)"
+python -c "import importlib.metadata as m; print('zdnn', m.version('ibm-zdnn-plugin'))"
+```
+
+**`pyarrow` is not needed.** It has no s390x build. `src/tableio.py` writes every table as `.parquet` *and* `.csv` and reads the CSV copy when pyarrow is missing, so the VM runs entirely from the CSV files in `data/processed/`. Install anything else that's missing with `python -m pip install <name>`.
+
+### 4. Get the Granite model (big-endian)
+
+Models for s390x must be **big-endian** GGUF files. The VM ships only `granite-4.0-h-350m-base-be.f16.gguf`, a small *base* model that doesn't follow instructions reliably. We used Granite 3.3 2B Instruct, big-endian (about 1.55 GB), from the [s390x verified models](https://huggingface.co/taronaeo/Granite-3.3-2B-Instruct-BE-GGUF) collection:
+
+```bash
+cd /home/ibm-user
+wget -c https://huggingface.co/taronaeo/Granite-3.3-2B-Instruct-BE-GGUF/resolve/main/granite-3.3-2b-instruct-be.Q4_K_M.gguf
+head -c 4 granite-3.3-2b-instruct-be.Q4_K_M.gguf; echo     # should print GGUF
+```
+
+Point the project at it (this edit is machine-specific, so don't commit it):
+
+```bash
+cd ~/shared/slahkers-ibmz-datathon-2026
+sed -i 's|^  model_path: .*|  model_path: "/home/ibm-user/granite-3.3-2b-instruct-be.Q4_K_M.gguf"|' config.yaml
+grep -n -A1 "^granite" config.yaml
+```
+
+To pull later updates without losing this edit: `git stash && git pull && git stash pop`.
+
+### 5. Run the analysis and the IBM Z model run
+
+Run the stages one by one rather than `run_all.py` (see the note on Granite below):
+
+```bash
+python -m src.geo
+python -m src.weather
+python -m src.journeys
+python -m src.models --peak both --profile ibmz
+python -m src.evidence
+```
+
+`--profile ibmz` adds the Keras network, the NNPA check and an inference benchmark. Results go to `models/<version>/ibmz/{morning,evening}/metadata.json`. The logistic regression and XGBoost results should match a laptop run exactly. Ours did (morning ρ −0.12 raw, −0.14 adjusted).
+
+### 6. Generate Granite reports (slow: about 12 minutes each)
+
+On 3 CPU cores Granite 3.3 2B writes about 1 token per second, so **generate only the reports you need**, in the background:
+
+```bash
+nohup sh -c "python -m src.brief --level area && python -m src.brief --only GTO" > granite.log 2>&1 &
+tail -5 granite.log
+```
+
+Don't run `python run_all.py --profile ibmz` with `granite.model_path` set unless you have hours to spare: it generates every report (area, boroughs and all stations, about 188), which takes more than a day at this speed.
+
+**Human review is required.** The automatic check confirms every number came from the data, but not that the sentences are right. In our run Granite called 30% "higher than" 32%. Read every report in `data/processed/briefs/` and correct it before use.
+
+### 7. Copy the evidence off the VM
+
+`models/` is gitignored. Copy `models/<version>/ibmz/*/metadata.json` and `granite.log` into `docs/ibmz_evidence/` and commit them (`scp` from your laptop, Jupyter's file browser → Download, or `cat` and paste).
+
+### What ran where on LinuxONE
+
+| Part | Hardware |
+|---|---|
+| Keras network (benchmark only, not used for results) | CPU with IBM's zDNN plugin and the on-chip AI accelerator (NNPA) available: about 125,000 predictions per second |
+| Logistic regression (main results), XGBoost (check) | CPU cores |
+| IBM Granite 3.3 2B (report drafts) | CPU cores, about 1 token per second |
+
+We didn't measure a CPU-only baseline, so we report speeds, not speed-ups.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `ModuleNotFoundError: pyarrow` | Make sure you have the latest code (`git pull`); it falls back to CSV automatically |
+| `set granite.model_path in config.yaml` | Do step 4 |
+| A Granite report is empty or flagged `needs_review` | Read it; it's a draft. Small *base* models (the 350M file) often fail, so use the 2B *Instruct* model |
+| `Permission denied` writing files | `sudo chown -R $(id -u):$(id -g) ~/shared` |
+| Out of memory | Don't run Granite and the model training at the same time; close other Jupyter kernels |
 
 ## Data sources
 
@@ -180,4 +279,4 @@ Tests: `python tests/test_models_synthetic.py` (the pipeline recovers a planted 
 
 ## Libraries
 
-[pandas](https://pandas.pydata.org/) · [NumPy](https://numpy.org/) · [SciPy](https://scipy.org/) · [scikit-learn](https://scikit-learn.org/) · [XGBoost](https://xgboost.ai/) · [TensorFlow / Keras](https://www.tensorflow.org/) with [IBM zDNN plugin](https://pypi.org/project/ibm-zdnn-plugin/) · [matplotlib](https://matplotlib.org/) · [PyArrow](https://arrow.apache.org/docs/python/) · [PyYAML](https://pyyaml.org/) · [Requests](https://requests.readthedocs.io/) · [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) · [IBM Granite 3.3 2B Instruct](https://huggingface.co/ibm-granite/granite-3.3-2b-instruct)
+[pandas](https://pandas.pydata.org/) · [NumPy](https://numpy.org/) · [SciPy](https://scipy.org/) · [scikit-learn](https://scikit-learn.org/) · [XGBoost](https://xgboost.ai/) · [TensorFlow / Keras](https://www.tensorflow.org/) with [IBM zDNN plugin](https://pypi.org/project/ibm-zdnn-plugin/) · [matplotlib](https://matplotlib.org/) · [PyArrow](https://arrow.apache.org/docs/python/) (optional) · [PyYAML](https://pyyaml.org/) · [Requests](https://requests.readthedocs.io/) · [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) · [IBM Granite 3.3 2B Instruct](https://huggingface.co/ibm-granite/granite-3.3-2b-instruct) (big-endian GGUF for s390x: [taronaeo/Granite-3.3-2B-Instruct-BE-GGUF](https://huggingface.co/taronaeo/Granite-3.3-2B-Instruct-BE-GGUF))
