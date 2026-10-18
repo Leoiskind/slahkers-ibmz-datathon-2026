@@ -1,0 +1,267 @@
+{
+  "version": "v1-2026-10-17",
+  "peak": "evening",
+  "profile": "ibmz",
+  "platform": "ibmz",
+  "machine": "s390x",
+  "byteorder": "big",
+  "python": "3.12.15",
+  "libraries": {
+    "numpy": "2.0.2",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.0",
+    "xgboost": "3.4.1",
+    "tensorflow": "2.18.1"
+  },
+  "created": "2026-10-17T23:45:50",
+  "source": [
+    "hsp"
+  ],
+  "target": "late_or_cancelled_hsp_recorded",
+  "features": [
+    "minutes_to_hub",
+    "stops_between",
+    "stops_before",
+    "sched_hour",
+    "rain_mm",
+    "wind_kmh"
+  ],
+  "primary_model": "logreg",
+  "models": [
+    "logreg",
+    "xgb",
+    "keras"
+  ],
+  "n_trains": 4235,
+  "n_stations": 83,
+  "failure_rate": 0.2654073199527745,
+  "seed": 0,
+  "n_folds": 5,
+  "n_boot": 2000,
+  "metrics": {
+    "logreg": {
+      "roc_auc": 0.6381165557641294,
+      "brier": 0.18809017755919716,
+      "brier_baseline": 0.19496627446826012,
+      "calibration": [
+        {
+          "mean_predicted": 0.1265,
+          "observed": 0.0731,
+          "n": 424
+        },
+        {
+          "mean_predicted": 0.1638,
+          "observed": 0.1466,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.1897,
+          "observed": 0.2028,
+          "n": 424
+        },
+        {
+          "mean_predicted": 0.2132,
+          "observed": 0.2435,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.2371,
+          "observed": 0.2689,
+          "n": 424
+        },
+        {
+          "mean_predicted": 0.2612,
+          "observed": 0.2577,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.291,
+          "observed": 0.3168,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.3272,
+          "observed": 0.4127,
+          "n": 424
+        },
+        {
+          "mean_predicted": 0.3773,
+          "observed": 0.3806,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.4658,
+          "observed": 0.3514,
+          "n": 424
+        }
+      ]
+    },
+    "xgb": {
+      "roc_auc": 0.761951907535081,
+      "brier": 0.16039264493350175,
+      "brier_baseline": 0.19496627446826012,
+      "calibration": [
+        {
+          "mean_predicted": 0.0467,
+          "observed": 0.0354,
+          "n": 424
+        },
+        {
+          "mean_predicted": 0.0889,
+          "observed": 0.0922,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.1258,
+          "observed": 0.1038,
+          "n": 424
+        },
+        {
+          "mean_predicted": 0.1642,
+          "observed": 0.1678,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.2075,
+          "observed": 0.1981,
+          "n": 424
+        },
+        {
+          "mean_predicted": 0.2564,
+          "observed": 0.2695,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.3093,
+          "observed": 0.28,
+          "n": 425
+        },
+        {
+          "mean_predicted": 0.3696,
+          "observed": 0.3617,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.4563,
+          "observed": 0.4681,
+          "n": 423
+        },
+        {
+          "mean_predicted": 0.6152,
+          "observed": 0.6785,
+          "n": 423
+        }
+      ]
+    },
+    "keras": {
+      "roc_auc": 0.4816024186933977,
+      "brier": 0.2177316586692612,
+      "brier_baseline": 0.19496627446826012,
+      "calibration": [
+        {
+          "mean_predicted": 0.2846,
+          "observed": 0.2941,
+          "n": 425
+        },
+        {
+          "mean_predicted": 0.3335,
+          "observed": 0.3152,
+          "n": 422
+        },
+        {
+          "mean_predicted": 0.3631,
+          "observed": 0.286,
+          "n": 430
+        },
+        {
+          "mean_predicted": 0.3842,
+          "observed": 0.2798,
+          "n": 436
+        },
+        {
+          "mean_predicted": 0.4003,
+          "observed": 0.2549,
+          "n": 408
+        },
+        {
+          "mean_predicted": 0.4141,
+          "observed": 0.1944,
+          "n": 427
+        },
+        {
+          "mean_predicted": 0.4267,
+          "observed": 0.2102,
+          "n": 433
+        },
+        {
+          "mean_predicted": 0.4403,
+          "observed": 0.2391,
+          "n": 435
+        },
+        {
+          "mean_predicted": 0.456,
+          "observed": 0.2625,
+          "n": 400
+        },
+        {
+          "mean_predicted": 0.4926,
+          "observed": 0.3198,
+          "n": 419
+        }
+      ]
+    }
+  },
+  "tests": {
+    "logreg": {
+      "raw": {
+        "rho": -0.14801518393291394,
+        "lo": -0.36961368724172255,
+        "hi": 0.09383153116626548,
+        "n_stations": 83
+      },
+      "adjusted": {
+        "rho": -0.07233113639225892,
+        "lo": -0.3011634014212255,
+        "hi": 0.15884128045985055,
+        "n_stations": 83
+      }
+    },
+    "xgb": {
+      "raw": {
+        "rho": -0.14801518393291394,
+        "lo": -0.36961368724172255,
+        "hi": 0.09383153116626548,
+        "n_stations": 83
+      },
+      "adjusted": {
+        "rho": -0.08097896813735778,
+        "lo": -0.2993096178927334,
+        "hi": 0.16285642761624317,
+        "n_stations": 83
+      }
+    },
+    "keras": {
+      "raw": {
+        "rho": -0.14801518393291394,
+        "lo": -0.36961368724172255,
+        "hi": 0.09383153116626548,
+        "n_stations": 83
+      },
+      "adjusted": {
+        "rho": -0.12587632761009193,
+        "lo": -0.357390610783026,
+        "hi": 0.11997123875843389,
+        "n_stations": 83
+      }
+    }
+  },
+  "ibmz": {
+    "nnpa_in_cpuinfo": true,
+    "zdnn_plugin_version": "2.3.0",
+    "keras_inference_benchmark": {
+      "rows": 4235,
+      "best_s": 0.040603012006613426,
+      "rows_per_s": 104302
+    }
+  }
+}
